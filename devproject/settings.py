@@ -225,6 +225,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'misago.cache.middleware.cache_versions_middleware',
+    'misago.conf.middleware.dynamic_settings_middleware',
     'misago.users.middleware.UserMiddleware',
     'misago.core.middleware.ExceptionHandlerMiddleware',
     'misago.users.middleware.OnlineTrackerMiddleware',
