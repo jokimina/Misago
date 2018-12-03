@@ -4,6 +4,8 @@ from django.test import Client, TestCase, override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 
+from misago.cache.versions import get_cache_versions
+from misago.conf.dynamicsettings import DynamicSettings
 from misago.core.testproject.views import mock_custom_403_error_page, mock_custom_404_error_page
 from misago.core.utils import encode_json_html
 from misago.users.models import AnonymousUser
@@ -76,11 +78,20 @@ class ErrorPageViewsTests(TestCase):
 @override_settings(ROOT_URLCONF='misago.core.testproject.urlswitherrorhandlers')
 class CustomErrorPagesTests(TestCase):
     def setUp(self):
+        cache_versions = get_cache_versions()
+        settings = DynamicSettings(cache_versions)
+
         self.misago_request = RequestFactory().get(reverse('misago:index'))
         self.site_request = RequestFactory().get(reverse('raise-403'))
 
         self.misago_request.user = AnonymousUser()
         self.site_request.user = AnonymousUser()
+
+        self.misago_request.cache_versions = cache_versions
+        self.site_request.cache_versions = cache_versions
+
+        self.misago_request.settings = settings
+        self.site_request.settings = settings
 
         self.misago_request.include_frontend_context = True
         self.site_request.include_frontend_context = True

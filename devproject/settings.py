@@ -288,7 +288,7 @@ TEMPLATES = [
 
                 'misago.core.context_processors.site_address',
                 'misago.core.context_processors.momentjs_locale',
-                'misago.conf.context_processors.settings',
+                'misago.conf.context_processors.conf',
                 'misago.search.context_processors.search_providers',
                 'misago.users.context_processors.user_links',
                 'misago.legal.context_processors.legal_links',

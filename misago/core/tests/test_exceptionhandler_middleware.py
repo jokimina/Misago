@@ -3,16 +3,22 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
 
+from misago.cache.versions import get_cache_versions
+from misago.conf.dynamicsettings import DynamicSettings
 from misago.core.middleware import ExceptionHandlerMiddleware
 from misago.users.models import AnonymousUser
 
 
 class ExceptionHandlerMiddlewareTests(TestCase):
     def setUp(self):
-        self.request = RequestFactory().get(reverse('misago:index'))
-        self.request.user = AnonymousUser()
-        self.request.include_frontend_context = True
-        self.request.frontend_context = {}
+        request = RequestFactory().get(reverse('misago:index'))
+        request.user = AnonymousUser()
+        request.cache_versions = get_cache_versions()
+        request.settings = DynamicSettings(request.cache_versions)
+        request.include_frontend_context = True
+        request.frontend_context = {}
+
+        self.request = request
 
     def test_middleware_returns_response_for_supported_exception(self):
         """Middleware returns HttpResponse for supported exception"""

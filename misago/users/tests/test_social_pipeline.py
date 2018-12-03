@@ -6,10 +6,11 @@ from django.test import RequestFactory, override_settings
 from social_core.backends.github import GithubOAuth2
 from social_django.utils import load_strategy
 
+from misago.cache.versions import get_cache_versions
+from misago.conf.dynamicsettings import DynamicSettings
 from misago.core.exceptions import SocialAuthFailed, SocialAuthBanned
 from misago.legal.models import Agreement
 
-from misago.users.constants import BANS_CACHE
 from misago.users.models import AnonymousUser, Ban, BanCache
 from misago.users.social.pipeline import (
     associate_by_email, create_user, create_user_with_form, get_username, require_activation,
@@ -28,9 +29,10 @@ def create_request(user_ip='0.0.0.0', data=None):
     else:
         request = factory.post('/', data=json.dumps(data), content_type='application/json')
     request.include_frontend_context = True
-    request.cache_versions = {BANS_CACHE: "abcdefgh"}
+    request.cache_versions = get_cache_versions()
     request.frontend_context = {}
     request.session = {}
+    request.settings = DynamicSettings(request.cache_versions)
     request.user = AnonymousUser()
     request.user_ip = user_ip
     return request
