@@ -40,6 +40,8 @@ class Rank(models.Model):
             self.set_order()
         else:
             acl_version.invalidate()
+        if not self.slug:
+            self.slug = slugify(self.name)
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
