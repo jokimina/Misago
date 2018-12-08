@@ -297,11 +297,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def acl_cache(self):
-        try:
-            return self._acl_cache
-        except AttributeError:
-            self._acl_cache = get_user_acl(self)
-            return self._acl_cache
+        # FIXME: get rid of user.acl_cache - store user id on request.user_acl
+        return get_user_acl(self)
 
     @acl_cache.setter
     def acl_cache(self, value):
@@ -309,6 +306,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def acl_(self):
+        # FIXME: remove this property
         raise NotImplementedError('user.acl_ property was renamed to user.acl')
 
     @property
