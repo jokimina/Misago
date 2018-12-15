@@ -36,7 +36,7 @@ DEBUG = True
 # A list of strings representing the host/domain names that this Django site can serve.
 # If you are unsure, just enter here your domain name, eg. ['mysite.com', 'www.mysite.com']
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split("|")
 
 
 # Database
@@ -443,5 +443,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # Display debug toolbar if IN_MISAGO_DOCKER enviroment var is set to "1"
 
 DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': 'misago.conf.debugtoolbar.enable_debug_toolbar'
+    'SHOW_TOOLBAR_CALLBACK': 'misago.conf.debugtoolbar.enable_debug_toolbar',
+    'JQUERY_URL': '//cdn.bootcss.com/jquery/2.2.4/jquery.min.js'
 }
