@@ -159,6 +159,9 @@ DEFAULT_FROM_EMAIL = 'Forums <%s>' % EMAIL_HOST_USER
 AUTH_USER_MODEL = 'misago_users.User'
 
 AUTHENTICATION_BACKENDS = [
+    # 'social_core.backends.weixin.WeixinOAuth2',
+    'social_core.backends.qq.QQOAuth2',
+    'social_core.backends.github.GithubOAuth2',
     'misago.users.authbackends.MisagoBackend',
 ]
 
@@ -264,7 +267,11 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.load_extra_data',
     'misago.users.social.pipeline.require_activation',
 )
-
+SOCIAL_AUTH_GITHUB_KEY = os.environ.get('SOCIAL_AUTH_GITHUB_KEY', '')
+SOCIAL_AUTH_GITHUB_SECRET = os.environ.get('SOCIAL_AUTH_GITHUB_SECRET', '')
+SOCIAL_AUTH_QQ_KEY = os.environ.get('SOCIAL_AUTH_QQ_KEY', '')
+SOCIAL_AUTH_QQ_SECRET = os.environ.get('SOCIAL_AUTH_QQ_SECRET', '')
+SOCIAL_AUTH_TRAILING_SLASH = False
 SOCIAL_AUTH_POSTGRES_JSONFIELD = True
 
 TEMPLATES = [
@@ -353,7 +360,7 @@ REST_FRAMEWORK = {
 # On Misago admin panel home page you will find a message telling you if you have entered the
 # correct value, or what value is correct in case you've didn't.
 
-MISAGO_ADDRESS = 'http://my-misago-site.com/'
+MISAGO_ADDRESS = os.environ.get("ALLOWED_HOSTS", "").split("|")[0]
 
 
 # PostgreSQL text search configuration to use in searches
