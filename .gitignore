@@ -54,3 +54,6 @@ pylint.txt
 # Django stuff:
 *.log
 *.pot
+
+# Wechat verify
+MP_verify_*.txt
