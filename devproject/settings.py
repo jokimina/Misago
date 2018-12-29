@@ -454,3 +454,28 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'misago.conf.debugtoolbar.enable_debug_toolbar',
     'JQUERY_URL': '//cdn.bootcss.com/jquery/2.2.4/jquery.min.js'
 }
+
+if DEBUG:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s [%(process)d/%(thread)d]'
+            }
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'propagate': True,
+                'level': 'DEBUG',
+            }
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+                'formatter': 'verbose',
+            }
+        },
+    }
