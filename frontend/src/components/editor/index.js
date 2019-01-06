@@ -155,6 +155,7 @@ export default class extends React.Component {
           </Button>
           <Button
             className="btn-primary btn-sm pull-right"
+            onClick={this.props.onClick}
             loading={this.props.loading}
           >
             {this.props.submitLabel || gettext("Post")}

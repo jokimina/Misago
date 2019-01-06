@@ -35,8 +35,7 @@ DEBUG = True
 
 # A list of strings representing the host/domain names that this Django site can serve.
 # If you are unsure, just enter here your domain name, eg. ['mysite.com', 'www.mysite.com']
-
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split("|")
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split('|')
 
 
 # Database
@@ -159,7 +158,7 @@ DEFAULT_FROM_EMAIL = 'Forums <%s>' % EMAIL_HOST_USER
 AUTH_USER_MODEL = 'misago_users.User'
 
 AUTHENTICATION_BACKENDS = [
-    # 'social_core.backends.weixin.WeixinOAuth2',
+    'social_core.backends.weixin.WeixinOAuth2',
     'social_core.backends.qq.QQOAuth2',
     'social_core.backends.github.GithubOAuth2',
     'misago.users.authbackends.MisagoBackend',
@@ -200,6 +199,7 @@ INSTALLED_APPS = [
     'misago.readtracker',
     'misago.search',
     'misago.faker',
+    'misago.pay',
 ]
 
 INTERNAL_IPS = [
@@ -271,6 +271,8 @@ SOCIAL_AUTH_GITHUB_KEY = os.environ.get('SOCIAL_AUTH_GITHUB_KEY', '')
 SOCIAL_AUTH_GITHUB_SECRET = os.environ.get('SOCIAL_AUTH_GITHUB_SECRET', '')
 SOCIAL_AUTH_QQ_KEY = os.environ.get('SOCIAL_AUTH_QQ_KEY', '')
 SOCIAL_AUTH_QQ_SECRET = os.environ.get('SOCIAL_AUTH_QQ_SECRET', '')
+SOCIAL_AUTH_WEIXIN_KEY = os.environ.get('SOCIAL_AUTH_WEIXIN_KEY', '')
+SOCIAL_AUTH_WEIXIN_SECRET = os.environ.get('SOCIAL_AUTH_WEIXIN_SECRET', '')
 SOCIAL_AUTH_TRAILING_SLASH = False
 SOCIAL_AUTH_POSTGRES_JSONFIELD = True
 
@@ -453,3 +455,33 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'misago.conf.debugtoolbar.enable_debug_toolbar',
     'JQUERY_URL': '//cdn.bootcss.com/jquery/2.2.4/jquery.min.js'
 }
+
+if DEBUG:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s [%(process)d/%(thread)d]'
+            }
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'propagate': True,
+                'level': 'DEBUG',
+            }
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+                'formatter': 'verbose',
+            }
+        },
+    }
+
+# wechat api
+WECHAT_APP_ID = os.environ.get('WECHAT_APP_ID')
+WECHAT_API_KEY = os.environ.get('WECHAT_API_KEY')
+WECHAT_MCH_ID = os.environ.get('WECHAT_MCH_ID')
