@@ -298,6 +298,7 @@ TEMPLATES = [
                 'misago.search.context_processors.search_providers',
                 'misago.users.context_processors.user_links',
                 'misago.legal.context_processors.legal_links',
+                'misago.pay.context_processors.pay_links',
 
                 # Data preloaders
                 'misago.conf.context_processors.preload_settings_json',
@@ -462,20 +463,25 @@ if DEBUG:
         'disable_existing_loggers': False,
         'formatters': {
             'verbose': {
-                'format': '%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s [%(process)d/%(thread)d]'
+                'format': '%(asctime)s %(levelname)s <%(module)s:%(lineno)s %(funcName)s> %(message)s [%(processName)s/%(threadName)s]'
             }
         },
         'loggers': {
             'django': {
                 'handlers': ['console'],
                 'propagate': True,
-                'level': 'DEBUG',
+                'level': 'INFO',
+            },
+            'misago': {
+                'handlers': ['console'],
+                'propagate': True,
+                'level': 'INFO',
             }
         },
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
-                'level': 'DEBUG',
+                'level': 'INFO',
                 'formatter': 'verbose',
             }
         },
