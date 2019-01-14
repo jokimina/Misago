@@ -54,6 +54,7 @@ class ReplyMiddleware(PostingMiddleware):
 
     def new_thread(self, validated_data):
         self.thread.set_title(validated_data['title'])
+        self.thread.reward = validated_data['reward']
         self.thread.starter_name = self.user.username
         self.thread.starter_slug = self.user.slug
         self.thread.last_poster_name = self.user.username
@@ -105,3 +106,9 @@ class ThreadSerializer(ReplySerializer):
             'required': gettext_lazy("You have to enter thread title."),
         }
     )
+    reward = serializers.IntegerField(required=False)
+
+    # def validate_reward(self, value):
+    #     if self.context['mode'] == PostingEndpoint.START:
+    #         raise serializers.ValidationError("Blog post is not about Django")
+    #     return value

@@ -36,6 +36,7 @@ class Thread(models.Model):
 
     started_on = models.DateTimeField(db_index=True)
     last_post_on = models.DateTimeField(db_index=True)
+    reward = models.PositiveSmallIntegerField(default=0)
 
     first_post = models.ForeignKey(
         'misago_threads.Post',

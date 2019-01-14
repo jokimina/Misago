@@ -5,7 +5,7 @@ from django.http import Http404, HttpResponsePermanentRedirect, JsonResponse
 from django.urls import reverse
 from social_core.exceptions import SocialAuthBaseException
 from social_core.utils import social_logger
-
+from wechatpy.exceptions import WeChatException
 from . import errorpages
 from .exceptions import AjaxError, Banned, ExplicitFirstPage, OutdatedSlug
 
@@ -18,6 +18,7 @@ HANDLED_EXCEPTIONS = (
     OutdatedSlug,
     PermissionDenied,
     SocialAuthBaseException,
+    WeChatException,
 )
 
 
@@ -31,6 +32,10 @@ def handle_ajax_error(request, exception):
         'message': str(exception.message),
     }
     return JsonResponse(json, status=exception.code)
+
+
+def handle_wechat_error(request, exception):
+    return JsonResponse(exception.__dict__)
 
 
 def handle_banned_exception(request, exception):
@@ -75,6 +80,7 @@ def handle_social_auth_exception(request, exception):
 
 EXCEPTION_HANDLERS = [
     (AjaxError, handle_ajax_error),
+    (WeChatException, handle_wechat_error),
     (Banned, handle_banned_exception),
     (Http404, handle_http404_exception),
     (ExplicitFirstPage, handle_explicit_first_page_exception),

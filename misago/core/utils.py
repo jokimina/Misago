@@ -7,6 +7,7 @@ from django.urls import resolve, reverse
 from django.utils import html, timezone
 from django.utils.encoding import force_text
 from django.utils.module_loading import import_string
+import logging
 
 
 MISAGO_SLUGIFY = getattr(settings, 'MISAGO_SLUGIFY', 'misago.core.slugify.default')
@@ -172,4 +173,7 @@ def get_host_from_address(address):
         address = address.split(':')[0] or address
 
     return address
-    
+
+
+def get_logger(name=None):
+    return logging.getLogger('misago.%s' % name)

@@ -27,6 +27,7 @@
     "jQuery",
     "hljs",
 
-    "phantom"
+    "phantom",
+    "setTimeout"
   ]
 }

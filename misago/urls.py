@@ -37,6 +37,7 @@ apipatterns = [
     url(r'^', include('misago.threads.urls.api')),
     url(r'^', include('misago.users.urls.api')),
     url(r'^', include('misago.search.urls.api')),
+    url(r'^', include('misago.pay.urls.api')),
 ]
 
 urlpatterns += [
