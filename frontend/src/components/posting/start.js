@@ -103,7 +103,7 @@ export default class extends Form {
         ajax.get(misago.get('PAY_WECHATPAY_STATUS_API'), {'out_trade_no': this.state.outTradeNo}).then(
             (data) => {
                 if (data.status === 'SUCCESS'){
-                    modal.hide()
+                    modal.hide();
                     this.handleSubmit();
                 }
             }
@@ -114,12 +114,14 @@ export default class extends Form {
         ajax.get(misago.get('PAY_WECHATPAY_QRCODE_API'), {'reward': this.state.reward * 100}).then(
             (data) => {
                 this.setState({outTradeNo: data.out_trade_no})
+                let queryStatusIntervalId = setInterval(this.queryPayStatus, 1500)
                 modal.show(
                     <ModalDialog>
                         <QRCode value={data.code_url} size={256} />
                     </ModalDialog>
-                );
-                setInterval(this.queryPayStatus, 1500)
+                , () => {
+                        clearInterval(queryStatusIntervalId)
+                   });
             }
         )
 
