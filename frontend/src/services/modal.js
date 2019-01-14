@@ -12,9 +12,12 @@ export class Modal {
     });
   }
 
-  show(component) {
+  show(component, callback) {
     mount(component, this._element.id);
     this._modal.modal('show');
+    if(callback&&typeof(callback)==="function"){
+        this._modal.on('hide.bs.modal', callback);
+    }
   }
 
   hide() {

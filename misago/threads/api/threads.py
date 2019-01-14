@@ -20,6 +20,9 @@ from .threadendpoints.editor import thread_start_editor
 from .threadendpoints.list import private_threads_list_endpoint, threads_list_endpoint
 from .threadendpoints.merge import thread_merge_endpoint, threads_merge_endpoint
 from .threadendpoints.patch import bulk_patch_endpoint, thread_patch_endpoint
+from misago.core.utils import get_logger
+
+logger = get_logger(__file__)
 
 
 class ViewSet(viewsets.ViewSet):
