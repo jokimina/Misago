@@ -95,7 +95,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -491,3 +491,4 @@ if DEBUG:
 WECHAT_APP_ID = os.environ.get('WECHAT_APP_ID')
 WECHAT_API_KEY = os.environ.get('WECHAT_API_KEY')
 WECHAT_MCH_ID = os.environ.get('WECHAT_MCH_ID')
+WECHAT_CALLBACK_URL = os.environ.get('WECHAT_CALLBACK_URL')

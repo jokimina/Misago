@@ -1,5 +1,6 @@
 import React from 'react'; //jshint ignore:line
 import CategorySelect from 'misago/components/category-select'; //jshint ignore:line
+import RewardSelect from 'misago/components/reward-select'; //jshint ignore:line
 import Editor from 'misago/components/editor'; //jshint ignore:line
 import Form from 'misago/components/form';
 import Container from './utils/container'; //jshint ignore:line
@@ -35,7 +36,9 @@ export default class extends Form {
             close: false,
             hide: false,
             pin: 0,
-
+            outTradeNo: '',
+            rewards: [1, 10, 20 ,30 ,50],
+            reward: 10,
             validators: {
                 title: getTitleValidators(),
                 post: getPostValidators()
@@ -96,17 +99,30 @@ export default class extends Form {
         }
     };
 
+    queryPayStatus = () => {
+        ajax.get(misago.get('PAY_WECHATPAY_STATUS_API'), {'out_trade_no': this.state.outTradeNo}).then(
+            (data) => {
+                if (data.status === 'SUCCESS'){
+                    modal.hide()
+                    this.handleSubmit();
+                }
+            }
+        )
+    }
+
     onClick = () => {
-        modal.show(
-            <ModalDialog>
-                {/*<div>*/}
-                    {/*<img class="img-responsive"*/}
-                         {/*src="https://raw.githubusercontent.com/mrhaoji/mrhaoji.github.com/master/IMG_1480.JPG"*/}
-                         {/*alt="微信群"></img>*/}
-                {/*</div>*/}
-                <QRCode value="http://facebook.github.io/react/" size={256} />
-            </ModalDialog>
-        );
+        ajax.get(misago.get('PAY_WECHATPAY_QRCODE_API'), {'reward': this.state.reward * 100}).then(
+            (data) => {
+                this.setState({outTradeNo: data.out_trade_no})
+                modal.show(
+                    <ModalDialog>
+                        <QRCode value={data.code_url} size={256} />
+                    </ModalDialog>
+                );
+                setInterval(this.queryPayStatus, 1500)
+            }
+        )
+
     }
 
     onTitleChange = (event) => {
@@ -131,6 +147,14 @@ export default class extends Form {
             pin
         });
     };
+
+    onRewardChange = (event) => {
+        const reward = this.state.rewards.find((item) => {
+            return event.target.value == item
+        })
+
+        this.setState({reward})
+    }
 
     onPostChange = (event) => {
         this.changeValue('post', event.target.value);
@@ -205,6 +229,7 @@ export default class extends Form {
             attachments: attachments.clean(this.state.attachments),
             close: this.state.close,
             hide: this.state.hide,
+            reward: this.state.reward * 100,
             pin: this.state.pin
         });
     }
@@ -309,25 +334,15 @@ export default class extends Form {
                             showOptions={this.state.showOptions}
                         />
                     </div>
-                    <div className="row">
-                        <div className="col-md-12">
-                            <form class="form-horizontal">
-                                <fieldset>
-                                    <div class="control-group">
-                                        <label class="control-label col-md-1 text-left">悬赏金额:</label>
-                                        <div class="controls" style={{display: "inline"}}>
-                                            <select class="input-xlarge">
-                                                <option>10</option>
-                                                <option>20</option>
-                                                <option>50</option>
-                                                <option>100</option>
-                                                <option>其他</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </fieldset>
-                            </form>
-                        </div>
+                    <div className='form-inline'>
+                        <label className="control-label">悬赏金额:</label>
+                         <RewardSelect
+                            id="reward"
+                            choices={this.state.rewards}
+                            disabled={this.state.isLoading}
+                            onChange={this.onRewardChange}
+                            value={this.state.reward}
+                        />
                     </div>
                     <div className="row">
                         <div className="col-md-12">
@@ -359,7 +374,7 @@ export function ModalDialog(props) {
         >
             <div className="modal-content center-block" style={{width: "fit-content"}}>
                 <div className="modal-header">
-                    <h4 className="modal-title text-center">悬赏金支付</h4>
+                    <h4 className="modal-title text-center">{props.title || "sample"}</h4>
                     {props.children}
                 </div>
             </div>

@@ -54,3 +54,6 @@ pylint.txt
 # Django stuff:
 *.log
 *.pot
+
+# virtual env
+venv
