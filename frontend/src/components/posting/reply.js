@@ -9,6 +9,10 @@ import { getPostValidators } from './utils/validators';
 import ajax from 'misago/services/ajax';
 import posting from 'misago/services/posting'; //jshint ignore:line
 import snackbar from 'misago/services/snackbar';
+import { ModalDialog } from './start'; // jshint ignore:line
+import modal from 'misago/services/modal'; // jshint ignore:line
+
+const QRCode = require('qrcode.react'); // jshint ignore:line
 
 export default class extends Form {
   constructor(props) {
@@ -78,6 +82,49 @@ export default class extends Form {
     if (cancel) {
       posting.close();
     }
+  };
+
+  queryBindStatus = () => {
+    ajax.get(misago.get('PAY_WECHAT_BIND_STATUS_API')).then(
+      (data) => {
+        if (data.status === 'SUCCESS'){
+            modal.hide();
+            this.handleSubmit()
+        }
+      }
+    )
+  }
+
+  onClick = () => {
+    ajax.get(misago.get('PAY_WECHAT_BIND_QRCODE_API')).then(
+        (data) => {
+          if (data && data.code_url) {
+            let queryBindStatusIntervalId = setInterval(this.queryBindStatus, 1500)
+            modal.show(
+                <ModalDialog>
+                  <div className="card text-center">
+                    <QRCode value={data.code_url} size={256}/>
+                    <div className="card-body">
+                      <p className="card-text">
+                        扫描二维码, xxxxxxxxxxxxxxxxxxx
+                      </p>
+                    </div>
+                  </div>
+                </ModalDialog>
+                , () => {
+                  clearInterval(queryBindStatusIntervalId)
+                }
+            )
+          }
+        },
+        (rejection) => {
+            if (rejection.statusText === 'Gone'){
+              this.handleSubmit()
+            } else {
+              snackbar.apiError(rejection)
+            }
+        }
+    )
   };
 
   onPostChange = (event) => {
@@ -153,6 +200,7 @@ export default class extends Form {
                   onAttachmentsChange={this.onAttachmentsChange}
                   onCancel={this.onCancel}
                   onChange={this.onPostChange}
+                  onClick={this.onClick}
                   submitLabel={gettext("Post reply")}
                   value={this.state.post}
                 />

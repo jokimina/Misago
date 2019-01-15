@@ -57,3 +57,6 @@ pylint.txt
 
 # virtual env
 venv
+
+# secret files
+*.pem

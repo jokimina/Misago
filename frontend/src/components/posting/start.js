@@ -125,7 +125,7 @@ export default class extends Form {
             }
         )
 
-    }
+    };
 
     onTitleChange = (event) => {
         this.changeValue('title', event.target.value);

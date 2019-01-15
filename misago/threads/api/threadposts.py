@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils.translation import gettext as _
+from wechatpy.exceptions import WeChatPayException
 
 from misago.acl import add_acl
 from misago.core.shortcuts import get_int_or_404
@@ -13,6 +14,7 @@ from misago.threads.permissions import allow_edit_post, allow_reply_thread
 from misago.threads.serializers import AttachmentSerializer, PostSerializer
 from misago.threads.viewmodels import ForumThread, PrivateThread, ThreadPost, ThreadPosts
 from misago.users.online.utils import make_users_status_aware
+from misago.pay.utils import wechatpay_client
 
 from .postendpoints.delete import delete_bulk, delete_post
 from .postendpoints.edits import get_edit_endpoint, revert_post_endpoint
@@ -102,9 +104,17 @@ class ViewSet(viewsets.ViewSet):
         )
 
         if posting.is_valid():
+            # transfer_result = wechatpay_client.transfer.transfer(user_id='ouU491BVfSo3l5ZA76W0_AYNAf7w', amount=30,
+            #                                                      desc='测试', check_name='NO_CHECK')
+            transfer_result = wechatpay_client.transfer.transfer(user_id=request.user.wechat_openid, amount=30,
+                                                                 desc='测试', check_name='NO_CHECK')
+            if transfer_result.get('return_code') != 'SUCCESS':
+                raise WeChatPayException(return_code=-1, errmsg="奖金打款失败.")
+
             user_posts = request.user.posts
 
             posting.save()
+
 
             # setup extra data for serialization
             post.is_read = False

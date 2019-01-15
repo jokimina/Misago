@@ -487,8 +487,16 @@ if DEBUG:
         },
     }
 
+ANON_REST_LIST = [
+    '/api/pay/event/callback'
+]
+
 # wechat api
 WECHAT_APP_ID = os.environ.get('WECHAT_APP_ID')
 WECHAT_API_KEY = os.environ.get('WECHAT_API_KEY')
 WECHAT_MCH_ID = os.environ.get('WECHAT_MCH_ID')
 WECHAT_CALLBACK_URL = os.environ.get('WECHAT_CALLBACK_URL')
+WECHAT_TOKEN = os.environ.get('WECHAT_TOKEN')
+WECHATPAY_API_KEY = os.environ.get('WECHATPAY_API_KEY')
+
+RESOURCE_DIR = os.path.join(BASE_DIR, 'resource')
