@@ -1,35 +1,38 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
+from unittest.mock import Mock
 
-from misago.users import signatures
+import pytest
 
-
-UserModel = get_user_model()
+from ...users import signatures
 
 
-class MockRequest(object):
-    scheme = 'http'
+@pytest.fixture
+def signature(user):
+    user.signature = "Test"
+    user.signature_parsed = "Test"
+    user.signature_checksum = "Test"
+    user.save()
 
-    def get_host(self):
-        return '127.0.0.1:8000'
+
+def test_user_signature_and_valid_checksum_is_set(user, signature, user_acl):
+    request = Mock(scheme="http", get_host=Mock(return_value="127.0.0.1:800"))
+    signatures.set_user_signature(request, user, user_acl, "Changed")
+
+    assert user.signature == "Changed"
+    assert user.signature_parsed == "<p>Changed</p>"
+    assert user.signature_checksum
+    assert signatures.is_user_signature_valid(user)
 
 
-class SignaturesTests(TestCase):
-    def test_signature_change(self):
-        """signature module allows for signature change"""
-        test_user = UserModel.objects.create_user('Bob', 'bob@bob.com', 'pass123')
+def test_user_signature_is_cleared(user, signature, user_acl):
+    request = Mock(scheme="http", get_host=Mock(return_value="127.0.0.1:800"))
+    signatures.set_user_signature(request, user, user_acl, "")
 
-        signatures.set_user_signature(MockRequest(), test_user, '')
+    assert not user.signature
+    assert not user.signature_parsed
+    assert not user.signature_checksum
 
-        self.assertEqual(test_user.signature, '')
-        self.assertEqual(test_user.signature_parsed, '')
-        self.assertEqual(test_user.signature_checksum, '')
 
-        signatures.set_user_signature(MockRequest(), test_user, 'Hello, world!')
-
-        self.assertEqual(test_user.signature, 'Hello, world!')
-        self.assertEqual(test_user.signature_parsed, '<p>Hello, world!</p>')
-        self.assertTrue(signatures.is_user_signature_valid(test_user))
-
-        test_user.signature_parsed = '<p>Injected evil HTML!</p>'
-        self.assertFalse(signatures.is_user_signature_valid(test_user))
+def test_signature_validity_check_fails_for_incorrect_signature_checksum(
+    user, signature
+):
+    assert not signatures.is_user_signature_valid(user)

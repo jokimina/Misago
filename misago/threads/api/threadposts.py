@@ -1,28 +1,26 @@
-from rest_framework import viewsets
-from rest_framework.decorators import detail_route, list_route
-from rest_framework.response import Response
-
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils.translation import gettext as _
 from wechatpy.exceptions import WeChatPayException
+from rest_framework import viewsets
+from rest_framework.decorators import detail_route, list_route
+from rest_framework.response import Response
 
-from misago.acl import add_acl
-from misago.core.shortcuts import get_int_or_404
-from misago.threads.models import Post
-from misago.threads.permissions import allow_edit_post, allow_reply_thread
-from misago.threads.serializers import AttachmentSerializer, PostSerializer
-from misago.threads.viewmodels import ForumThread, PrivateThread, ThreadPost, ThreadPosts
-from misago.users.online.utils import make_users_status_aware
-from misago.pay.utils import wechatpay_client
-
+from ...acl.objectacl import add_acl_to_obj
+from ...core.shortcuts import get_int_or_404
+from ...users.online.utils import make_users_status_aware
+from ...pay.utils import wechatpay_client
+from ..models import Post
+from ..permissions import allow_edit_post, allow_reply_thread
+from ..serializers import AttachmentSerializer, PostSerializer
+from ..viewmodels import ForumThread, PrivateThread, ThreadPost, ThreadPosts
 from .postendpoints.delete import delete_bulk, delete_post
 from .postendpoints.edits import get_edit_endpoint, revert_post_endpoint
 from .postendpoints.likes import likes_list_endpoint
 from .postendpoints.merge import posts_merge_endpoint
 from .postendpoints.move import posts_move_endpoint
 from .postendpoints.patch_event import event_patch_endpoint
-from .postendpoints.patch_post import post_patch_endpoint, bulk_patch_endpoint
+from .postendpoints.patch_post import bulk_patch_endpoint, post_patch_endpoint
 from .postendpoints.read import post_read_endpoint
 from .postendpoints.split import posts_split_endpoint
 from .postingendpoint import PostingEndpoint
@@ -33,8 +31,10 @@ class ViewSet(viewsets.ViewSet):
     posts = ThreadPosts
     post_ = ThreadPost
 
-    def get_thread(self, request, pk, path_aware=False, read_aware=False, subscription_aware=False):
-        return self.thread(
+    def get_thread(
+        self, request, pk, path_aware=False, read_aware=False, subscription_aware=False
+    ):
+        return self.thread(  # pylint: disable=not-callable
             request,
             get_int_or_404(pk),
             path_aware=path_aware,
@@ -49,7 +49,7 @@ class ViewSet(viewsets.ViewSet):
         return self.post_(request, thread, get_int_or_404(pk))
 
     def list(self, request, thread_pk):
-        page = get_int_or_404(request.query_params.get('page', 0))
+        page = get_int_or_404(request.query_params.get("page", 0))
         if page == 1:
             page = 0  # api allows explicit first page
 
@@ -63,23 +63,23 @@ class ViewSet(viewsets.ViewSet):
         posts = self.get_posts(request, thread, page)
 
         data = thread.get_frontend_context()
-        data['post_set'] = posts.get_frontend_context()
+        data["post_set"] = posts.get_frontend_context()
 
         return Response(data)
 
-    @list_route(methods=['post'])
+    @list_route(methods=["post"])
     @transaction.atomic
     def merge(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk).unwrap()
         return posts_merge_endpoint(request, thread)
 
-    @list_route(methods=['post'])
+    @list_route(methods=["post"])
     @transaction.atomic
     def move(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk).unwrap()
         return posts_move_endpoint(request, thread, self.thread)
 
-    @list_route(methods=['post'])
+    @list_route(methods=["post"])
     @transaction.atomic
     def split(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk).unwrap()
@@ -88,74 +88,62 @@ class ViewSet(viewsets.ViewSet):
     @transaction.atomic
     def create(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk).unwrap()
-        allow_reply_thread(request.user, thread)
+        allow_reply_thread(request.user_acl, thread)
 
-        post = Post(
-            thread=thread,
-            category=thread.category,
-        )
+        post = Post(thread=thread, category=thread.category)
 
         # Put them through posting pipeline
         posting = PostingEndpoint(
-            request,
-            PostingEndpoint.REPLY,
-            thread=thread,
-            post=post,
+            request, PostingEndpoint.REPLY, thread=thread, post=post
         )
 
-        if posting.is_valid():
-            # transfer_result = wechatpay_client.transfer.transfer(user_id='ouU491BVfSo3l5ZA76W0_AYNAf7w', amount=30,
-            #                                                      desc='测试', check_name='NO_CHECK')
-            transfer_result = wechatpay_client.transfer.transfer(user_id=request.user.wechat_openid, amount=30,
-                                                                 desc='测试', check_name='NO_CHECK')
-            if transfer_result.get('return_code') != 'SUCCESS':
-                raise WeChatPayException(return_code=-1, errmsg="奖金打款失败.")
-
-            user_posts = request.user.posts
-
-            posting.save()
-
-
-            # setup extra data for serialization
-            post.is_read = False
-            post.is_new = True
-            post.poster.posts = user_posts + 1
-
-            make_users_status_aware(request.user, [post.poster])
-
-            return Response(PostSerializer(post, context={'user': request.user}).data)
-        else:
+        if not posting.is_valid():
             return Response(posting.errors, status=400)
+
+        transfer_result = wechatpay_client.transfer.transfer(user_id=request.user.wechat_openid, amount=30,
+                                                             desc='测试', check_name='NO_CHECK')
+        if transfer_result.get('return_code') != 'SUCCESS':
+            raise WeChatPayException(return_code=-1, errmsg="奖金打款失败.")
+
+        user_posts = request.user.posts
+
+        posting.save()
+
+        # setup extra data for serialization
+        post.is_read = False
+        post.is_new = True
+        post.poster.posts = user_posts + 1
+
+        make_users_status_aware(request, [post.poster])
+
+        return Response(PostSerializer(post, context={"user": request.user}).data)
 
     @transaction.atomic
     def update(self, request, thread_pk, pk=None):
         thread = self.get_thread(request, thread_pk).unwrap()
         post = self.get_post(request, thread, pk).unwrap()
 
-        allow_edit_post(request.user, post)
+        allow_edit_post(request.user_acl, post)
 
         posting = PostingEndpoint(
-            request,
-            PostingEndpoint.EDIT,
-            thread=thread,
-            post=post,
+            request, PostingEndpoint.EDIT, thread=thread, post=post
         )
 
-        if posting.is_valid():
-            post_edits = post.edits
-
-            posting.save()
-
-            post.is_read = True
-            post.is_new = False
-            post.edits = post_edits + 1
-
-            if post.poster:
-                make_users_status_aware(request.user, [post.poster])
-
-            return Response(PostSerializer(post, context={'user': request.user}).data)
-        else:
+        if not posting.is_valid():
             return Response(posting.errors, status=400)
+
+        post_edits = post.edits
+
+        posting.save()
+
+        post.is_read = True
+        post.is_new = False
+        post.edits = post_edits + 1
+
+        if post.poster:
+            make_users_status_aware(request, [post.poster])
+
+        return Response(PostSerializer(post, context={"user": request.user}).data)
 
     def patch(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk)
@@ -168,8 +156,7 @@ class ViewSet(viewsets.ViewSet):
 
         if post.is_event:
             return event_patch_endpoint(request, post)
-        else:
-            return post_patch_endpoint(request, post)
+        return post_patch_endpoint(request, post)
 
     @transaction.atomic
     def delete(self, request, thread_pk, pk=None):
@@ -181,87 +168,87 @@ class ViewSet(viewsets.ViewSet):
 
         return delete_bulk(request, thread.unwrap())
 
-    @detail_route(methods=['post'])
+    @detail_route(methods=["post"])
     def read(self, request, thread_pk, pk=None):
-        thread = self.get_thread(
-            request,
-            thread_pk,
-            subscription_aware=True,
-        ).unwrap()
-
+        thread = self.get_thread(request, thread_pk, subscription_aware=True).unwrap()
         post = self.get_post(request, thread, pk).unwrap()
-
         return post_read_endpoint(request, thread, post)
 
-    @detail_route(methods=['get'], url_path='editor')
+    @detail_route(methods=["get"], url_path="editor")
     def post_editor(self, request, thread_pk, pk=None):
         thread = self.get_thread(request, thread_pk)
         post = self.get_post(request, thread, pk).unwrap()
 
-        allow_edit_post(request.user, post)
+        allow_edit_post(request.user_acl, post)
 
         attachments = []
-        for attachment in post.attachment_set.order_by('-id'):
-            add_acl(request.user, attachment)
+        for attachment in post.attachment_set.order_by("-id"):
+            add_acl_to_obj(request.user_acl, attachment)
             attachments.append(attachment)
         attachments_json = AttachmentSerializer(
-            attachments, many=True, context={'user': request.user}
+            attachments, many=True, context={"user": request.user}
         ).data
 
-        return Response({
-            'id': post.pk,
-            'api': post.get_api_url(),
-            'post': post.original,
-            'attachments': attachments_json,
-            'can_protect': bool(thread.category.acl['can_protect_posts']),
-            'is_protected': post.is_protected,
-            'poster': post.poster_name,
-        })
+        return Response(
+            {
+                "id": post.pk,
+                "api": post.get_api_url(),
+                "post": post.original,
+                "attachments": attachments_json,
+                "can_protect": bool(thread.category.acl["can_protect_posts"]),
+                "is_protected": post.is_protected,
+                "poster": post.poster_name,
+            }
+        )
 
-    @list_route(methods=['get'], url_path='editor')
+    @list_route(methods=["get"], url_path="editor")
     def reply_editor(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk).unwrap()
-        allow_reply_thread(request.user, thread)
+        allow_reply_thread(request.user_acl, thread)
 
-        if 'reply' in request.query_params:
-            reply_to = self.get_post(request, thread, request.query_params['reply']).unwrap()
-
-            if reply_to.is_event:
-                raise PermissionDenied(_("You can't reply to events."))
-            if reply_to.is_hidden and not reply_to.acl['can_see_hidden']:
-                raise PermissionDenied(_("You can't reply to hidden posts."))
-
-            return Response({
-                'id': reply_to.pk,
-                'post': reply_to.original,
-                'poster': reply_to.poster_name,
-            })
-        else:
+        if "reply" not in request.query_params:
             return Response({})
 
-    @detail_route(methods=['get', 'post'])
+        reply_to = self.get_post(
+            request, thread, request.query_params["reply"]
+        ).unwrap()
+
+        if reply_to.is_event:
+            raise PermissionDenied(_("You can't reply to events."))
+        if reply_to.is_hidden and not reply_to.acl["can_see_hidden"]:
+            raise PermissionDenied(_("You can't reply to hidden posts."))
+
+        return Response(
+            {
+                "id": reply_to.pk,
+                "post": reply_to.original,
+                "poster": reply_to.poster_name,
+            }
+        )
+
+    @detail_route(methods=["get", "post"])
     def edits(self, request, thread_pk, pk=None):
-        if request.method == 'GET':
+        if request.method == "GET":
             thread = self.get_thread(request, thread_pk)
             post = self.get_post(request, thread, pk).unwrap()
 
             return get_edit_endpoint(request, post)
 
-        if request.method == 'POST':
+        if request.method == "POST":
             with transaction.atomic():
                 thread = self.get_thread(request, thread_pk)
                 post = self.get_post(request, thread, pk).unwrap()
 
-                allow_edit_post(request.user, post)
+                allow_edit_post(request.user_acl, post)
 
                 return revert_post_endpoint(request, post)
 
-    @detail_route(methods=['get'])
+    @detail_route(methods=["get"])
     def likes(self, request, thread_pk, pk=None):
         thread = self.get_thread(request, thread_pk)
         post = self.get_post(request, thread, pk).unwrap()
 
-        if post.acl['can_see_likes'] < 2:
+        if post.acl["can_see_likes"] < 2:
             raise PermissionDenied(_("You can't see who liked this post."))
 
         return likes_list_endpoint(request, post)

@@ -2,13 +2,12 @@ from django import template
 from django.template import Context
 from django.template.loader import get_template
 
-
 register = template.Library()
 
 
 def _render_editor_template(context, editor, tpl):
     c = Context(context)
-    c['editor'] = editor
+    c["editor"] = editor
 
     return get_template(tpl).render(c)
 

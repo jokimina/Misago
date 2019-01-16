@@ -4,28 +4,28 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
-from misago.users import validators
-from misago.users.bans import get_email_ban, get_ip_ban, get_username_ban
+from ..bans import get_email_ban, get_ip_ban, get_username_ban
+from ..validators import validate_email, validate_new_registration, validate_username
 
-
-UserModel = get_user_model()
+User = get_user_model()
 
 
 class BaseRegisterForm(forms.Form):
-    username = forms.CharField(validators=[validators.validate_username])
-    email = forms.CharField(validators=[validators.validate_email])
+    username = forms.CharField()
+    email = forms.CharField(validators=[validate_email])
 
     terms_of_service = forms.IntegerField(required=False)
     privacy_policy = forms.IntegerField(required=False)
 
     def __init__(self, *args, **kwargs):
-        self.agreements = kwargs.pop('agreements')
-        self.request = kwargs.pop('request')
+        self.agreements = kwargs.pop("agreements")
+        self.request = kwargs.pop("request")
         super().__init__(*args, **kwargs)
 
     def clean_username(self):
-        data = self.cleaned_data['username']
+        data = self.cleaned_data["username"]
 
+        validate_username(self.request.settings, data)
         ban = get_username_ban(data, registration_only=True)
         if ban:
             if ban.user_message:
@@ -35,7 +35,7 @@ class BaseRegisterForm(forms.Form):
         return data
 
     def clean_email(self):
-        data = self.cleaned_data['email']
+        data = self.cleaned_data["email"]
 
         ban = get_email_ban(data, registration_only=True)
         if ban:
@@ -47,7 +47,7 @@ class BaseRegisterForm(forms.Form):
 
     def clean_agreements(self, data):
         for field_name, agreement in self.agreements.items():
-            if data.get(field_name) != agreement['id']:
+            if data.get(field_name) != agreement["id"]:
                 error = ValueError(_("This agreement is required."))
                 self.add_error(field_name, error)
 
@@ -57,7 +57,9 @@ class BaseRegisterForm(forms.Form):
             if ban.user_message:
                 raise ValidationError(ban.user_message)
             else:
-                raise ValidationError(_("New registrations from this IP address are not allowed."))
+                raise ValidationError(
+                    _("New registrations from this IP address are not allowed.")
+                )
 
 
 class SocialAuthRegisterForm(BaseRegisterForm):
@@ -67,7 +69,7 @@ class SocialAuthRegisterForm(BaseRegisterForm):
         self.clean_agreements(cleaned_data)
         self.raise_if_ip_banned()
 
-        validators.validate_new_registration(self.request, cleaned_data, self)
+        validate_new_registration(self.request, cleaned_data, self.add_error)
 
         return cleaned_data
 
@@ -79,12 +81,12 @@ class RegisterForm(BaseRegisterForm):
     captcha = forms.CharField(required=False)
 
     def full_clean_password(self, cleaned_data):
-        if cleaned_data.get('password'):
+        if cleaned_data.get("password"):
             validate_password(
-                cleaned_data['password'],
-                user=UserModel(
-                    username=cleaned_data.get('username'),
-                    email=cleaned_data.get('email'),
+                cleaned_data["password"],
+                user=User(
+                    username=cleaned_data.get("username"),
+                    email=cleaned_data.get("email"),
                 ),
             )
 
@@ -97,8 +99,8 @@ class RegisterForm(BaseRegisterForm):
         try:
             self.full_clean_password(cleaned_data)
         except forms.ValidationError as e:
-            self.add_error('password', e)
+            self.add_error("password", e)
 
-        validators.validate_new_registration(self.request, cleaned_data, self.add_error)
+        validate_new_registration(self.request, cleaned_data, self.add_error)
 
         return cleaned_data

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views import View
 
-from misago.threads.viewmodels import ForumThread, PrivateThread, ThreadPosts
+from ..viewmodels import ForumThread, PrivateThread, ThreadPosts
 
 
 class ThreadBase(View):
@@ -22,7 +22,7 @@ class ThreadBase(View):
         return render(request, self.template_name, template_context)
 
     def get_thread(self, request, pk, slug):
-        return self.thread(
+        return self.thread(  # pylint: disable=not-callable
             request,
             pk,
             slug,
@@ -41,18 +41,20 @@ class ThreadBase(View):
     def get_frontend_context(self, request, thread, posts):
         context = self.get_default_frontend_context()
 
-        context.update({
-            'THREAD': thread.get_frontend_context(),
-            'POSTS': posts.get_frontend_context(),
-        })
+        context.update(
+            {
+                "THREAD": thread.get_frontend_context(),
+                "POSTS": posts.get_frontend_context(),
+            }
+        )
 
         return context
 
     def get_template_context(self, request, thread, posts):
         context = {
-            'url_name': ':'.join(request.resolver_match.namespaces + [
-                request.resolver_match.url_name,
-            ])
+            "url_name": ":".join(
+                request.resolver_match.namespaces + [request.resolver_match.url_name]
+            )
         }
 
         context.update(thread.get_template_context())
@@ -63,14 +65,12 @@ class ThreadBase(View):
 
 class ThreadView(ThreadBase):
     thread = ForumThread
-    template_name = 'misago/thread/thread.html'
+    template_name = "misago/thread/thread.html"
 
     def get_default_frontend_context(self):
-        return {
-            'THREADS_API': reverse('misago:api:thread-list'),
-        }
+        return {"THREADS_API": reverse("misago:api:thread-list")}
 
 
 class PrivateThreadView(ThreadBase):
     thread = PrivateThread
-    template_name = 'misago/thread/private_thread.html'
+    template_name = "misago/thread/private_thread.html"

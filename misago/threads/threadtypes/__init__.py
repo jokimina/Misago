@@ -1,9 +1,10 @@
 from .treesmap import trees_map
 
 
-class ThreadType(object):
+class ThreadType:
     """Abstract class for thread type strategy"""
-    root_name = 'undefined'
+
+    root_name = "undefined"
 
     def get_forum_name(self, category):
         return category.name

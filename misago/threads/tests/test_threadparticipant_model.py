@@ -1,12 +1,9 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
-from misago.categories.models import Category
-from misago.threads.models import Post, Thread, ThreadParticipant
-
-
-UserModel = get_user_model()
+from ...categories.models import Category
+from ...users.test import create_test_user
+from ..models import Post, Thread, ThreadParticipant
 
 
 class ThreadParticipantTests(TestCase):
@@ -17,11 +14,11 @@ class ThreadParticipantTests(TestCase):
         self.thread = Thread(
             category=self.category,
             started_on=datetime,
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=datetime,
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         self.thread.set_title("Test thread")
@@ -30,7 +27,7 @@ class ThreadParticipantTests(TestCase):
         post = Post.objects.create(
             category=self.category,
             thread=self.thread,
-            poster_name='Tester',
+            poster_name="Tester",
             original="Hello! I am test message!",
             parsed="<p>Hello! I am test message!</p>",
             checksum="nope",
@@ -44,8 +41,8 @@ class ThreadParticipantTests(TestCase):
 
     def test_set_owner(self):
         """set_owner makes user thread owner"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
-        other_user = UserModel.objects.create_user("Bob2", "bob2@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
+        other_user = create_test_user("User2", "user2@example.com")
 
         ThreadParticipant.objects.set_owner(self.thread, user)
         self.assertEqual(self.thread.participants.count(), 1)
@@ -66,8 +63,8 @@ class ThreadParticipantTests(TestCase):
     def test_add_participants(self):
         """add_participant adds participant to thread"""
         users = [
-            UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123"),
-            UserModel.objects.create_user("Bob2", "bob2@boberson.com", "Pass.123"),
+            create_test_user("User", "user@example.com"),
+            create_test_user("User2", "user2@example.com"),
         ]
 
         ThreadParticipant.objects.add_participants(self.thread, users)
@@ -79,8 +76,8 @@ class ThreadParticipantTests(TestCase):
 
     def test_remove_participant(self):
         """remove_participant deletes participant from thread"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
-        other_user = UserModel.objects.create_user("Bob2", "bob2@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
+        other_user = create_test_user("User2", "user2@example.com")
 
         ThreadParticipant.objects.add_participants(self.thread, [user])
         ThreadParticipant.objects.add_participants(self.thread, [other_user])

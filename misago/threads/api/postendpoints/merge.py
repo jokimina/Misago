@@ -1,33 +1,23 @@
-from rest_framework.response import Response
-
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
+from rest_framework.response import Response
 
-from misago.acl import add_acl
-from misago.threads.serializers import MergePostsSerializer, PostSerializer
+from ....acl.objectacl import add_acl_to_obj
+from ...serializers import MergePostsSerializer, PostSerializer
 
 
 def posts_merge_endpoint(request, thread):
-    if not thread.acl['can_merge_posts']:
+    if not thread.acl["can_merge_posts"]:
         raise PermissionDenied(_("You can't merge posts in this thread."))
 
     serializer = MergePostsSerializer(
-        data=request.data,
-        context={
-            'thread': thread,
-            'user': request.user,
-        },
+        data=request.data, context={"thread": thread, "user_acl": request.user_acl}
     )
 
     if not serializer.is_valid():
-        return Response(
-            {
-                'detail': list(serializer.errors.values())[0][0],
-            },
-            status=400,
-        )
+        return Response({"detail": list(serializer.errors.values())[0][0]}, status=400)
 
-    posts = serializer.validated_data['posts']
+    posts = serializer.validated_data["posts"]
     first_post, merged_posts = posts[0], posts[1:]
 
     for post in merged_posts:
@@ -42,7 +32,7 @@ def posts_merge_endpoint(request, thread):
     first_post.save()
 
     first_post.update_search_vector()
-    first_post.save(update_fields=['search_vector'])
+    first_post.save(update_fields=["search_vector"])
 
     first_post.postread_set.all().delete()
 
@@ -55,6 +45,6 @@ def posts_merge_endpoint(request, thread):
     first_post.thread = thread
     first_post.category = thread.category
 
-    add_acl(request.user, first_post)
+    add_acl_to_obj(request.user_acl, first_post)
 
-    return Response(PostSerializer(first_post, context={'user': request.user}).data)
+    return Response(PostSerializer(first_post, context={"user": request.user}).data)

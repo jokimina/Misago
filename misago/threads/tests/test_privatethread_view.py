@@ -1,7 +1,6 @@
-from misago.acl.testutils import override_acl
-from misago.threads import testutils
-from misago.threads.models import ThreadParticipant
-
+from .. import test
+from ...acl.test import patch_user_acl
+from ..models import ThreadParticipant
 from .test_privatethreads import PrivateThreadsTestCase
 
 
@@ -9,7 +8,7 @@ class PrivateThreadViewTests(PrivateThreadsTestCase):
     def setUp(self):
         super().setUp()
 
-        self.thread = testutils.post_thread(self.category, poster=self.user)
+        self.thread = test.post_thread(self.category, poster=self.user)
         self.test_link = self.thread.get_absolute_url()
 
     def test_anonymous(self):
@@ -19,10 +18,9 @@ class PrivateThreadViewTests(PrivateThreadsTestCase):
         response = self.client.get(self.test_link)
         self.assertContains(response, "sign in to use private threads", status_code=403)
 
+    @patch_user_acl({"can_use_private_threads": False})
     def test_no_permission(self):
         """user needs to have permission to see private thread"""
-        override_acl(self.user, {'can_use_private_threads': 0})
-
         response = self.client.get(self.test_link)
         self.assertContains(response, "t use private threads", status_code=403)
 
@@ -31,10 +29,9 @@ class PrivateThreadViewTests(PrivateThreadsTestCase):
         response = self.client.get(self.test_link)
         self.assertEqual(response.status_code, 404)
 
+    @patch_user_acl({"can_moderate_private_threads": True})
     def test_mod_not_reported(self):
         """moderator can't see private thread that has no reports"""
-        override_acl(self.user, {'can_moderate_private_threads': 1})
-
         response = self.client.get(self.test_link)
         self.assertEqual(response.status_code, 404)
 
@@ -60,10 +57,9 @@ class PrivateThreadViewTests(PrivateThreadsTestCase):
         response = self.client.get(self.test_link)
         self.assertContains(response, self.thread.title)
 
+    @patch_user_acl({"can_moderate_private_threads": True})
     def test_mod_can_see_reported(self):
         """moderator can see private thread that has reports"""
-        override_acl(self.user, {'can_moderate_private_threads': 1})
-
         self.thread.has_reported_posts = True
         self.thread.save()
 

@@ -1,32 +1,33 @@
-from misago.categories import THREADS_ROOT_NAME
-from misago.categories.models import Category
-from misago.core.testutils import MisagoTestCase
-from misago.threads import testutils
-from misago.threads.threadtypes import trees_map
+from django.test import TestCase
+
+from .. import THREADS_ROOT_NAME
+from ...threads import test
+from ...threads.threadtypes import trees_map
+from ..models import Category
 
 
-class CategoryManagerTests(MisagoTestCase):
+class CategoryManagerTests(TestCase):
     def test_private_threads(self):
         """private_threads returns private threads category"""
         category = Category.objects.private_threads()
 
-        self.assertEqual(category.special_role, 'private_threads')
+        self.assertEqual(category.special_role, "private_threads")
 
     def test_root_category(self):
         """root_category returns categories tree root"""
         category = Category.objects.root_category()
 
-        self.assertEqual(category.special_role, 'root_category')
+        self.assertEqual(category.special_role, "root_category")
 
     def test_all_categories(self):
         """all_categories returns queryset with categories tree"""
         root = Category.objects.root_category()
 
-        test_category_a = Category(name='Test')
-        test_category_a.insert_at(root, position='last-child', save=True)
+        test_category_a = Category(name="Test")
+        test_category_a.insert_at(root, position="last-child", save=True)
 
-        test_category_b = Category(name='Test 2')
-        test_category_b.insert_at(root, position='last-child', save=True)
+        test_category_b = Category(name="Test 2")
+        test_category_b.insert_at(root, position="last-child", save=True)
 
         all_categories_from_db = list(Category.objects.all_categories(True))
 
@@ -45,14 +46,14 @@ class CategoryManagerTests(MisagoTestCase):
                 self.assertNotIn(category.id, test_dict)
 
 
-class CategoryModelTests(MisagoTestCase):
+class CategoryModelTests(TestCase):
     def setUp(self):
         super().setUp()
 
         self.category = Category.objects.all_categories()[:1][0]
 
     def create_thread(self):
-        return testutils.post_thread(self.category)
+        return test.post_thread(self.category)
 
     def assertCategoryIsEmpty(self):
         self.assertIsNone(self.category.last_post_on)
@@ -131,12 +132,7 @@ class CategoryModelTests(MisagoTestCase):
 
         # we are using category so we don't have to fake another category
         new_category = Category.objects.create(
-            lft=7,
-            rght=8,
-            tree_id=2,
-            level=0,
-            name='Archive',
-            slug='archive',
+            lft=7, rght=8, tree_id=2, level=0, name="Archive", slug="archive"
         )
         self.category.move_content(new_category)
 

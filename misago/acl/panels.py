@@ -1,21 +1,20 @@
 from debug_toolbar.panels import Panel
-
 from django.utils.translation import gettext_lazy as _
 
 
 class MisagoACLPanel(Panel):
     """panel that displays current user's ACL"""
+
     title = _("Misago User ACL")
-    template = 'misago/acl_debug.html'
+    template = "misago/acl_debug.html"
 
     @property
     def nav_subtitle(self):
-        misago_user = self.get_stats().get('misago_user')
+        misago_user = self.get_stats().get("misago_user")
 
         if misago_user and misago_user.is_authenticated:
             return misago_user.username
-        else:
-            return _("Anonymous user")
+        return _("Anonymous user")
 
     def process_response(self, request, response):
         try:
@@ -24,11 +23,8 @@ class MisagoACLPanel(Panel):
             misago_user = None
 
         try:
-            misago_acl = misago_user.acl_cache
+            misago_acl = request.user_acl
         except AttributeError:
             misago_acl = {}
 
-        self.record_stats({
-            'misago_user': misago_user,
-            'misago_acl': misago_acl,
-        })
+        self.record_stats({"misago_user": misago_user, "misago_acl": misago_acl})

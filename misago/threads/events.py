@@ -1,7 +1,6 @@
 from django.utils import timezone
 
-from misago.readtracker import poststracker
-
+from ..readtracker import poststracker
 from .models import Post
 
 
@@ -13,8 +12,8 @@ def record_event(request, thread, event_type, context=None, commit=True):
         thread=thread,
         poster=request.user,
         poster_name=request.user.username,
-        original='-',
-        parsed='-',
+        original="-",
+        parsed="-",
         posted_on=time_now,
         updated_on=time_now,
         is_event=True,

@@ -1,14 +1,11 @@
+from django.urls import reverse
 from rest_framework import serializers
 
-from django.urls import reverse
-
-from misago.core.serializers import MutableFields
-from misago.core.utils import format_plaintext_for_html
-
+from ..core.serializers import MutableFields
+from ..core.utils import format_plaintext_for_html
 from .models import Category
 
-
-__all__ = ['CategorySerializer']
+__all__ = ["CategorySerializer"]
 
 
 def last_activity_detail(f):
@@ -19,7 +16,11 @@ def last_activity_detail(f):
             return None
 
         acl = self.get_acl(obj)
-        tested_acls = (acl.get('can_see'), acl.get('can_browse'), acl.get('can_see_all_threads'), )
+        tested_acls = (
+            acl.get("can_see"),
+            acl.get("can_browse"),
+            acl.get("can_see_all_threads"),
+        )
 
         if not all(tested_acls):
             return None
@@ -41,34 +42,33 @@ class CategorySerializer(serializers.ModelSerializer, MutableFields):
     class Meta:
         model = Category
         fields = [
-            'id',
-            'parent',
-            'name',
-            'description',
-            'is_closed',
-            'threads',
-            'posts',
-            'last_post_on',
-            'last_thread_title',
-            'last_poster',
-            'last_poster_name',
-            'css_class',
-            'is_read',
-            'subcategories',
-            'acl',
-            'level',
-            'lft',
-            'rght',
-            'url',
+            "id",
+            "parent",
+            "name",
+            "description",
+            "is_closed",
+            "threads",
+            "posts",
+            "last_post_on",
+            "last_thread_title",
+            "last_poster",
+            "last_poster_name",
+            "css_class",
+            "is_read",
+            "subcategories",
+            "acl",
+            "level",
+            "lft",
+            "rght",
+            "url",
         ]
 
     def get_description(self, obj):
         if obj.description:
             return {
-                'plain': obj.description,
-                'html': format_plaintext_for_html(obj.description),
+                "plain": obj.description,
+                "html": format_plaintext_for_html(obj.description),
             }
-        return None
 
     def get_is_read(self, obj):
         try:
@@ -92,23 +92,20 @@ class CategorySerializer(serializers.ModelSerializer, MutableFields):
     def get_last_poster(self, obj):
         if obj.last_poster_id:
             return {
-                'id': obj.last_poster_id,
-                'avatars': obj.last_poster.avatars,
-                'url': reverse(
-                    'misago:user', kwargs={
-                        'slug': obj.last_poster_slug,
-                        'pk': obj.last_poster_id,
-                    }
-                )
+                "id": obj.last_poster_id,
+                "avatars": obj.last_poster.avatars,
+                "url": reverse(
+                    "misago:user",
+                    kwargs={"slug": obj.last_poster_slug, "pk": obj.last_poster_id},
+                ),
             }
-        return None
 
     def get_url(self, obj):
         return {
-            'index': obj.get_absolute_url(),
-            'last_thread': self.get_last_thread_url(obj),
-            'last_thread_new': self.get_last_thread_new_url(obj),
-            'last_post': self.get_last_post_url(obj),
+            "index": obj.get_absolute_url(),
+            "last_thread": self.get_last_thread_url(obj),
+            "last_thread_new": self.get_last_thread_new_url(obj),
+            "last_post": self.get_last_post_url(obj),
         }
 
     @last_activity_detail
@@ -133,4 +130,5 @@ class CategoryWithPosterSerializer(CategorySerializer):
         except AttributeError:
             return []
 
-CategoryWithPosterSerializer = CategoryWithPosterSerializer.extend_fields('last_poster')
+
+CategoryWithPosterSerializer = CategoryWithPosterSerializer.extend_fields("last_poster")

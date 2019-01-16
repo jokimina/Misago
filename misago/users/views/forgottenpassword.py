@@ -3,10 +3,10 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from misago.core.exceptions import Banned
-from misago.users.bans import get_user_ban
-from misago.users.decorators import deny_banned_ips
-from misago.users.tokens import is_password_change_token_valid
+from ...core.exceptions import Banned
+from ..bans import get_user_ban
+from ..decorators import deny_banned_ips
+from ..tokens import is_password_change_token_valid
 
 
 def reset_view(f):
@@ -19,10 +19,10 @@ def reset_view(f):
 
 @reset_view
 def request_reset(request):
-    request.frontend_context.update({
-        'SEND_PASSWORD_RESET_API': reverse('misago:api:send-password-form'),
-    })
-    return render(request, 'misago/forgottenpassword/request.html')
+    request.frontend_context.update(
+        {"SEND_PASSWORD_RESET_API": reverse("misago:api:send-password-form")}
+    )
+    return render(request, "misago/forgottenpassword/request.html")
 
 
 class ResetError(Exception):
@@ -34,30 +34,33 @@ def reset_password_form(request, pk, token):
     requesting_user = get_object_or_404(get_user_model(), pk=pk)
 
     try:
-        if (request.user.is_authenticated and request.user.id != requesting_user.id):
-            message = _("%(user)s, your link has expired. Please request new link and try again.")
-            raise ResetError(message % {'user': requesting_user.username})
+        if request.user.is_authenticated and request.user.id != requesting_user.id:
+            message = _(
+                "%(user)s, your link has expired. "
+                "Please request new link and try again."
+            )
+            raise ResetError(message % {"user": requesting_user.username})
 
         if not is_password_change_token_valid(requesting_user, token):
-            message = _("%(user)s, your link is invalid. Please try again or request new link.")
-            raise ResetError(message % {'user': requesting_user.username})
+            message = _(
+                "%(user)s, your link is invalid. Please try again or request new link."
+            )
+            raise ResetError(message % {"user": requesting_user.username})
 
-        ban = get_user_ban(requesting_user)
+        ban = get_user_ban(requesting_user, request.cache_versions)
         if ban:
             raise Banned(ban)
     except ResetError as e:
         return render(
-            request, 'misago/forgottenpassword/error.html', {
-                'message': e.args[0],
-            }, status=400
+            request,
+            "misago/forgottenpassword/error.html",
+            {"message": e.args[0]},
+            status=400,
         )
 
     api_url = reverse(
-        'misago:api:change-forgotten-password', kwargs={
-            'pk': pk,
-            'token': token,
-        }
+        "misago:api:change-forgotten-password", kwargs={"pk": pk, "token": token}
     )
 
-    request.frontend_context['CHANGE_PASSWORD_API'] = api_url
-    return render(request, 'misago/forgottenpassword/form.html')
+    request.frontend_context["CHANGE_PASSWORD_API"] = api_url
+    return render(request, "misago/forgottenpassword/form.html")

@@ -6,23 +6,33 @@
 #
 
 asn1crypto==0.24.0        # via cryptography
+amqp==2.3.2               # via kombu
+atomicwrites==1.2.1       # via pytest
+attrs==18.2.0             # via pytest
 beautifulsoup4==4.6.3
+billiard==3.5.0.5         # via celery
 bleach==2.1.4
 certifi==2018.10.15       # via requests
 cffi==1.11.5              # via cryptography
+celery[redis]==4.2.1
+certifi==2018.11.29       # via requests
 chardet==3.0.4            # via requests
 cryptography==2.4.2
 defusedxml==0.5.0         # via python3-openid, social-auth-core
+defusedxml==0.5.0         # via python3-openid, social-auth-core
 django-debug-toolbar==1.8
 django-htmlmin==0.10.0
-django-mptt==0.8.7
-django==1.11.16
+django-js-asset==1.1.0    # via django-mptt
+django-mptt==0.9.1
+django==1.11.17
 djangorestframework==3.6.4
 faker==0.8.18
 html5lib==0.999999999
 idna==2.7                 # via cryptography, requests
+idna==2.8                 # via requests
+kombu==4.2.2.post1        # via celery
 markdown==2.6.11
-misago-social-auth-app-django==2.1.0
+more-itertools==5.0.0     # via pytest
 oauthlib==2.1.0           # via requests-oauthlib, social-auth-core
 olefile==0.46             # via pillow
 optionaldict==0.1.1       # via wechatpy
@@ -32,15 +42,33 @@ pycparser==2.19           # via cffi
 pyjwt==1.6.4              # via social-auth-core
 python-dateutil==2.7.5    # via faker, wechatpy
 python3-openid==3.1.0     # via social-auth-core
+pluggy==0.8.0             # via pytest
+psycopg2-binary==2.7.6.1
+py==1.7.0                 # via pytest
+pyjwt==1.7.1              # via social-auth-core
+pytest-django==3.4.4
+pytest-mock==1.10.0
+pytest==4.0.2
+python-dateutil==2.7.5    # via faker
+python3-openid==3.1.0     # via social-auth-core
 pytz==2018.7
+redis==3.0.1              # via celery
 requests-oauthlib==1.0.0  # via social-auth-core
 requests==2.20.0
 six==1.11.0               # via bleach, cryptography, faker, html5lib, misago-social-auth-app-django, python-dateutil, social-auth-core, wechatpy
 social-auth-core==2.0.0   # via misago-social-auth-app-django
+requests==2.21.0
+responses==0.10.5
+six==1.12.0               # via bleach, faker, html5lib, more-itertools, pytest, python-dateutil, responses, snapshottest, social-auth-app-django, social-auth-core
+snapshottest==0.5.0
+social-auth-app-django==3.1.0
+social-auth-core==2.0.0   # via social-auth-app-django
 sqlparse==0.2.4           # via django-debug-toolbar
+termcolor==1.1.0          # via snapshottest
 text-unidecode==1.2       # via faker
 unidecode==0.4.21
 urllib3==1.24.1           # via requests
+vine==1.1.4               # via amqp
 webencodings==0.5.1       # via html5lib
 wechatpy==1.7.6
 xmltodict==0.11.0         # via wechatpy

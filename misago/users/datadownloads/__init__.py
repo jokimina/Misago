@@ -2,9 +2,9 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from misago.conf import settings
-from misago.users.models import DataDownload
-from misago.users.signals import archive_user_data
+from ...conf import settings
+from ..models import DataDownload
+from ..signals import archive_user_data
 
 from .dataarchive import DataArchive
 
@@ -21,9 +21,7 @@ def request_user_data_download(user, requester=None):
     requester = requester or user
 
     return DataDownload.objects.create(
-        user=user,
-        requester=requester,
-        requester_name=requester.username,
+        user=user, requester=requester, requester_name=requester.username
     )
 
 
@@ -35,12 +33,13 @@ def prepare_user_data_download(download, logger=None):
             archive_user_data.send(user, archive=archive)
             download.status = DataDownload.STATUS_READY
             download.expires_on = timezone.now() + timedelta(
-                hours=settings.MISAGO_USER_DATA_DOWNLOADS_EXPIRE_IN_HOURS)
+                hours=settings.MISAGO_USER_DATA_DOWNLOADS_EXPIRE_IN_HOURS
+            )
             download.file = archive.get_file()
             download.save()
             # todo: send an e-mail with download link
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             if logger:
                 logger.exception(e)
             return False

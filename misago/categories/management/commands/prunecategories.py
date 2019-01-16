@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from misago.categories.models import Category
+from ...models import Category
 
 
 class Command(BaseCommand):
@@ -11,9 +11,10 @@ class Command(BaseCommand):
     This command is intended to work as CRON job fired
     every few days (or more often) to execute categories pruning policies
     """
-    help = 'Prunes categories'
 
-    def handle(self, *args, **options):
+    help = "Prunes categories"
+
+    def handle(self, *args, **options):  # pylint: disable=too-many-branches
         now = timezone.now()
         synchronize_categories = []
 
@@ -55,4 +56,4 @@ class Command(BaseCommand):
             category.synchronize()
             category.save()
 
-        self.stdout.write('\n\nCategories were pruned')
+        self.stdout.write("\n\nCategories were pruned")

@@ -5,31 +5,22 @@ from django.db import IntegrityError, models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from misago.core import cachebuster
-from misago.users.constants import BANS_CACHEBUSTER
+from .. import BANS_CACHE
+from ...cache.versions import invalidate_cache
 
 
 class BansManager(models.Manager):
     def get_ip_ban(self, ip, registration_only=False):
-        return self.get_ban(
-            ip=ip,
-            registration_only=registration_only,
-        )
+        return self.get_ban(ip=ip, registration_only=registration_only)
 
     def get_username_ban(self, username, registration_only=False):
-        return self.get_ban(
-            username=username,
-            registration_only=registration_only,
-        )
+        return self.get_ban(username=username, registration_only=registration_only)
 
     def get_email_ban(self, email, registration_only=False):
-        return self.get_ban(
-            email=email,
-            registration_only=registration_only,
-        )
+        return self.get_ban(email=email, registration_only=registration_only)
 
     def invalidate_cache(self):
-        cachebuster.invalidate(BANS_CACHEBUSTER)
+        invalidate_cache(BANS_CACHE)
 
     def get_ban(self, username=None, email=None, ip=None, registration_only=False):
         checks = []
@@ -52,17 +43,23 @@ class BansManager(models.Manager):
         elif checks:
             queryset = queryset.filter(check_type__in=checks)
 
-        for ban in queryset.order_by('-id').iterator():
+        for ban in queryset.order_by("-id").iterator():
             if ban.is_expired:
                 continue
-            elif (ban.check_type == self.model.USERNAME and username and ban.check_value(username)):
+            elif (
+                ban.check_type == self.model.USERNAME
+                and username
+                and ban.check_value(username)
+            ):
                 return ban
-            elif (ban.check_type == self.model.EMAIL and email and ban.check_value(email)):
+            elif (
+                ban.check_type == self.model.EMAIL and email and ban.check_value(email)
+            ):
                 return ban
             elif ban.check_type == self.model.IP and ip and ban.check_value(ip):
                 return ban
-        else:
-            raise Ban.DoesNotExist('specified values are not banned')
+
+        raise Ban.DoesNotExist("specified values are not banned")
 
 
 class Ban(models.Model):
@@ -71,12 +68,14 @@ class Ban(models.Model):
     IP = 2
 
     CHOICES = [
-        (USERNAME, _('Username')),
-        (EMAIL, _('E-mail address')),
-        (IP, _('IP address')),
+        (USERNAME, _("Username")),
+        (EMAIL, _("E-mail address")),
+        (IP, _("IP address")),
     ]
 
-    check_type = models.PositiveIntegerField(default=USERNAME, choices=CHOICES, db_index=True)
+    check_type = models.PositiveIntegerField(
+        default=USERNAME, choices=CHOICES, db_index=True
+    )
     registration_only = models.BooleanField(default=False, db_index=True)
     banned_value = models.CharField(max_length=255, db_index=True)
     user_message = models.TextField(null=True, blank=True)
@@ -93,7 +92,8 @@ class Ban(models.Model):
         return super().save(*args, **kwargs)
 
     def get_serialized_message(self):
-        from misago.users.serializers import BanMessageSerializer
+        from ..serializers import BanMessageSerializer
+
         return BanMessageSerializer(self).data
 
     @property
@@ -104,15 +104,13 @@ class Ban(models.Model):
     def is_expired(self):
         if self.expires_on:
             return self.expires_on < timezone.now()
-        else:
-            return False
+        return False
 
     def check_value(self, value):
-        if '*' in self.banned_value:
-            regex = re.escape(self.banned_value).replace('\*', '(.*?)')
-            return re.search('^%s$' % regex, value) is not None
-        else:
-            return self.banned_value == value
+        if "*" in self.banned_value:
+            regex = re.escape(self.banned_value).replace(r"\*", r"(.*?)")
+            return re.search("^%s$" % regex, value, re.IGNORECASE) is not None
+        return self.banned_value.lower() == value.lower()
 
     def lift(self):
         self.expires_on = timezone.now()
@@ -122,16 +120,11 @@ class BanCache(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         primary_key=True,
-        related_name='ban_cache',
+        related_name="ban_cache",
         on_delete=models.CASCADE,
     )
-    ban = models.ForeignKey(
-        Ban,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-    )
-    bans_version = models.PositiveIntegerField(default=0)
+    ban = models.ForeignKey(Ban, null=True, blank=True, on_delete=models.SET_NULL)
+    cache_version = models.CharField(max_length=8, null=True)
     user_message = models.TextField(null=True, blank=True)
     staff_message = models.TextField(null=True, blank=True)
     expires_on = models.DateTimeField(null=True, blank=True)
@@ -143,7 +136,8 @@ class BanCache(models.Model):
             pass  # first come is first serve with ban cache
 
     def get_serialized_message(self):
-        from misago.users.serializers import BanMessageSerializer
+        from ..serializers import BanMessageSerializer
+
         temp_ban = Ban(
             id=1,
             check_type=Ban.USERNAME,
@@ -157,9 +151,8 @@ class BanCache(models.Model):
     def is_banned(self):
         return bool(self.ban)
 
-    @property
-    def is_valid(self):
-        version_is_valid = cachebuster.is_valid(BANS_CACHEBUSTER, self.bans_version)
-        expired = self.expires_on and self.expires_on < timezone.now()
+    def is_valid(self, cache_versions):
+        is_versioned = self.cache_version == cache_versions[BANS_CACHE]
+        is_expired = self.expires_on and self.expires_on < timezone.now()
 
-        return version_is_valid and not expired
+        return is_versioned and not is_expired

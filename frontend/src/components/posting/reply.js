@@ -13,76 +13,96 @@ import { ModalDialog } from './start'; // jshint ignore:line
 import modal from 'misago/services/modal'; // jshint ignore:line
 
 const QRCode = require('qrcode.react'); // jshint ignore:line
+import React from "react"
+import Editor from "misago/components/editor"
+import Form from "misago/components/form"
+import Container from "./utils/container"
+import Loader from "./utils/loader"
+import Message from "./utils/message"
+import * as attachments from "./utils/attachments"
+import { getPostValidators } from "./utils/validators"
+import ajax from "misago/services/ajax"
+import posting from "misago/services/posting"
+import snackbar from "misago/services/snackbar"
 
 export default class extends Form {
   constructor(props) {
-    super(props);
+    super(props)
 
     this.state = {
       isReady: false,
       isLoading: false,
       isErrored: false,
 
-      post: '',
+      post: "",
       attachments: [],
 
       validators: {
         post: getPostValidators()
       },
       errors: {}
-    };
+    }
   }
 
   componentDidMount() {
-    ajax.get(this.props.config, this.props.context || null).then(this.loadSuccess, this.loadError);
+    ajax
+      .get(this.props.config, this.props.context || null)
+      .then(this.loadSuccess, this.loadError)
   }
 
   componentWillReceiveProps(nextProps) {
-    const context = this.props.context;
-    const newContext = nextProps.context;
+    const context = this.props.context
+    const newContext = nextProps.context
 
-    if (context && newContext && context.reply === newContext.reply) return;
+    if (context && newContext && context.reply === newContext.reply) return
 
-    ajax.get(nextProps.config, nextProps.context || null).then(this.appendData, snackbar.apiError);
+    ajax
+      .get(nextProps.config, nextProps.context || null)
+      .then(this.appendData, snackbar.apiError)
   }
 
-  /* jshint ignore:start */
-  loadSuccess = (data) => {
+  loadSuccess = data => {
     this.setState({
       isReady: true,
 
-      post: data.post ? ('[quote="@' +  data.poster + '"]\n' + data.post + '\n[/quote]') : ''
-    });
-  };
+      post: data.post
+        ? '[quote="@' + data.poster + '"]\n' + data.post + "\n[/quote]"
+        : ""
+    })
+  }
 
-  loadError = (rejection) => {
+  loadError = rejection => {
     this.setState({
       isErrored: rejection.detail
-    });
-  };
+    })
+  }
 
-  appendData = (data) => {
-    const newPost = data.post ? ('[quote="@' +  data.poster + '"]\n' + data.post + '\n[/quote]\n\n') : '';
+  appendData = data => {
+    const newPost = data.post
+      ? '[quote="@' + data.poster + '"]\n' + data.post + "\n[/quote]\n\n"
+      : ""
 
     this.setState((prevState, props) => {
       if (prevState.post.length > 0) {
         return {
-          post: prevState.post + '\n\n' + newPost
-        };
+          post: prevState.post + "\n\n" + newPost
+        }
       }
 
       return {
         post: newPost
-      };
-    });
-  };
+      }
+    })
+  }
 
   onCancel = () => {
-    const cancel = confirm(gettext("Are you sure you want to discard your reply?"));
+    const cancel = confirm(
+      gettext("Are you sure you want to discard your reply?")
+    )
     if (cancel) {
-      posting.close();
+      posting.close()
     }
-  };
+  }
 
   queryBindStatus = () => {
     ajax.get(misago.get('PAY_WECHAT_BIND_STATUS_API')).then(
@@ -130,45 +150,47 @@ export default class extends Form {
   onPostChange = (event) => {
     this.changeValue('post', event.target.value);
   };
+  onPostChange = event => {
+    this.changeValue("post", event.target.value)
+  }
 
-  onAttachmentsChange = (attachments) => {
+  onAttachmentsChange = attachments => {
     this.setState({
       attachments
-    });
-  };
-  /* jshint ignore:end */
+    })
+  }
 
   clean() {
     if (!this.state.post.trim().length) {
-      snackbar.error(gettext("You have to enter a message."));
-      return false;
+      snackbar.error(gettext("You have to enter a message."))
+      return false
     }
 
-    const errors = this.validate();
+    const errors = this.validate()
 
     if (errors.post) {
-      snackbar.error(errors.post[0]);
-      return false;
+      snackbar.error(errors.post[0])
+      return false
     }
 
-    return true;
+    return true
   }
 
   send() {
     return ajax.post(this.props.submit, {
       post: this.state.post,
       attachments: attachments.clean(this.state.attachments)
-    });
+    })
   }
 
   handleSuccess(success) {
-    snackbar.success(gettext("Your reply has been posted."));
-    window.location = success.url.index;
+    snackbar.success(gettext("Your reply has been posted."))
+    window.location = success.url.index
 
     // keep form loading
     this.setState({
-      'isLoading': true
-    });
+      isLoading: true
+    })
   }
 
   handleError(rejection) {
@@ -177,23 +199,21 @@ export default class extends Form {
         rejection.non_field_errors || [],
         rejection.post || [],
         rejection.attachments || []
-      );
+      )
 
-      snackbar.error(errors[0]);
+      snackbar.error(errors[0])
     } else {
-      snackbar.apiError(rejection);
+      snackbar.apiError(rejection)
     }
   }
 
   render() {
-    /* jshint ignore:start */
     if (this.state.isReady) {
       return (
         <Container className="posting-form">
           <form onSubmit={this.handleSubmit} method="POST">
             <div className="row">
               <div className="col-md-12">
-
                 <Editor
                   attachments={this.state.attachments}
                   loading={this.state.isLoading}
@@ -204,21 +224,15 @@ export default class extends Form {
                   submitLabel={gettext("Post reply")}
                   value={this.state.post}
                 />
-
               </div>
             </div>
           </form>
         </Container>
-      );
+      )
     } else if (this.state.isErrored) {
-      return (
-        <Message message={this.state.isErrored} />
-      );
+      return <Message message={this.state.isErrored} />
     } else {
-      return (
-        <Loader />
-      );
+      return <Loader />
     }
-    /* jshint ignore:end */
   }
 }

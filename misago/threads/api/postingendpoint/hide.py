@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
-from misago.threads import moderation
-
 from . import PostingEndpoint, PostingMiddleware
+from ... import moderation
 
 
 class HideMiddleware(PostingMiddleware):
@@ -13,11 +12,11 @@ class HideMiddleware(PostingMiddleware):
         return HideSerializer(data=self.request.data)
 
     def post_save(self, serializer):
-        if self.thread.category.acl['can_hide_threads']:
-            if serializer.validated_data.get('hide'):
+        if self.thread.category.acl["can_hide_threads"]:
+            if serializer.validated_data.get("hide"):
                 moderation.hide_thread(self.request, self.thread)
                 self.thread.update_all = True
-                self.thread.save(update_fields=['is_hidden'])
+                self.thread.save(update_fields=["is_hidden"])
 
                 self.thread.category.synchronize()
                 self.thread.category.update_all = True

@@ -1,27 +1,18 @@
 from rest_framework import serializers
 
-from misago.categories.serializers import CategorySerializer
-from misago.core.serializers import MutableFields
-from misago.threads.models import Post
-from misago.users.serializers import UserSerializer
-
+from ...categories.serializers import CategorySerializer
+from ...core.serializers import MutableFields
+from ...users.serializers import UserSerializer
+from ..models import Post
 from .post import PostSerializer
 
-
-__all__ = [
-    'FeedSerializer',
-]
+__all__ = ["FeedSerializer"]
 
 FeedUserSerializer = UserSerializer.subset_fields(
-    'id',
-    'username',
-    'avatars',
-    'url',
-    'title',
-    'rank',
+    "id", "username", "avatars", "url", "title", "rank"
 )
 
-FeedCategorySerializer = CategorySerializer.subset_fields('name', 'css_class', 'url')
+FeedCategorySerializer = CategorySerializer.subset_fields("name", "css_class", "url")
 
 
 class FeedSerializer(PostSerializer, MutableFields):
@@ -32,13 +23,10 @@ class FeedSerializer(PostSerializer, MutableFields):
 
     class Meta:
         model = Post
-        fields = PostSerializer.Meta.fields + ['category', 'thread']
+        fields = PostSerializer.Meta.fields + ["category", "thread"]
 
     def get_thread(self, obj):
-        return {
-            'title': obj.thread.title,
-            'url': obj.thread.get_absolute_url(),
-        }
+        return {"title": obj.thread.title, "url": obj.thread.get_absolute_url()}
 
 
-FeedSerializer = FeedSerializer.exclude_fields('is_liked', 'is_new', 'is_read')
+FeedSerializer = FeedSerializer.exclude_fields("is_liked", "is_new", "is_read")

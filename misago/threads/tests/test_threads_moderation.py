@@ -1,13 +1,13 @@
-from misago.categories.models import Category
-from misago.threads import moderation, testutils
-from misago.threads.models import Thread
-from misago.users.testutils import AuthenticatedUserTestCase
+from .. import moderation, test
+from ...categories.models import Category
+from ...users.test import AuthenticatedUserTestCase
+from ..models import Thread
 
 
-class MockRequest(object):
+class MockRequest:
     def __init__(self, user):
         self.user = user
-        self.user_ip = '123.14.15.222'
+        self.user_ip = "123.14.15.222"
 
 
 class ThreadsModerationTests(AuthenticatedUserTestCase):
@@ -16,10 +16,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
 
         self.request = MockRequest(self.user)
         self.category = Category.objects.all_categories()[:1][0]
-        self.thread = testutils.post_thread(self.category)
-
-    def tearDown(self):
-        super().tearDown()
+        self.thread = test.post_thread(self.category)
 
     def reload_thread(self):
         self.thread = Thread.objects.get(pk=self.thread.pk)
@@ -27,17 +24,19 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
     def test_change_thread_title(self):
         """change_thread_title changes thread's title and slug"""
         self.assertTrue(
-            moderation.change_thread_title(self.request, self.thread, "New title is here!")
+            moderation.change_thread_title(
+                self.request, self.thread, "New title is here!"
+            )
         )
 
         self.reload_thread()
         self.assertEqual(self.thread.title, "New title is here!")
-        self.assertEqual(self.thread.slug, 'new-title-is-here')
+        self.assertEqual(self.thread.slug, "new-title-is-here")
 
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'changed_title')
+        self.assertEqual(event.event_type, "changed_title")
 
     def test_pin_globally_thread(self):
         """pin_thread_globally makes thread pinned globally"""
@@ -50,7 +49,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'pinned_globally')
+        self.assertEqual(event.event_type, "pinned_globally")
 
     def test_pin_globally_invalid_thread(self):
         """
@@ -72,7 +71,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'pinned_locally')
+        self.assertEqual(event.event_type, "pinned_locally")
 
     def test_pin_invalid_thread(self):
         """pin_thread_locally returns false for already locally pinned thread"""
@@ -94,7 +93,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'unpinned')
+        self.assertEqual(event.event_type, "unpinned")
 
     def test_unpin_locally_pinned_thread(self):
         """unpin_thread unpins locally pinned thread"""
@@ -109,7 +108,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'unpinned')
+        self.assertEqual(event.event_type, "unpinned")
 
     def test_unpin_weightless_thread(self):
         """unpin_thread returns false for already weightless thread"""
@@ -118,7 +117,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
 
     def test_approve_thread(self):
         """approve_thread approves unapproved thread"""
-        self.thread = testutils.post_thread(self.category, is_unapproved=True)
+        self.thread = test.post_thread(self.category, is_unapproved=True)
 
         self.assertTrue(self.thread.is_unapproved)
         self.assertTrue(self.thread.first_post.is_unapproved)
@@ -131,20 +130,15 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'approved')
+        self.assertEqual(event.event_type, "approved")
 
     def test_move_thread(self):
         """moves_thread moves unapproved thread to other category"""
         root_category = Category.objects.root_category()
-        Category(
-            name='New Category',
-            slug='new-category',
-        ).insert_at(
-            root_category,
-            position='last-child',
-            save=True,
+        Category(name="New Category", slug="new-category").insert_at(
+            root_category, position="last-child", save=True
         )
-        new_category = Category.objects.get(slug='new-category')
+        new_category = Category.objects.get(slug="new-category")
 
         self.assertEqual(self.thread.category, self.category)
         self.assertTrue(moderation.move_thread(self.request, self.thread, new_category))
@@ -155,12 +149,14 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'moved')
+        self.assertEqual(event.event_type, "moved")
 
     def test_move_thread_to_same_category(self):
         """moves_thread does not move thread to same category it is in"""
         self.assertEqual(self.thread.category, self.category)
-        self.assertFalse(moderation.move_thread(self.request, self.thread, self.category))
+        self.assertFalse(
+            moderation.move_thread(self.request, self.thread, self.category)
+        )
 
         self.reload_thread()
         self.assertEqual(self.thread.category, self.category)
@@ -176,7 +172,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'closed')
+        self.assertEqual(event.event_type, "closed")
 
     def test_close_invalid_thread(self):
         """close_thread fails gracefully for opened thread"""
@@ -200,7 +196,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'opened')
+        self.assertEqual(event.event_type, "opened")
 
     def test_open_invalid_thread(self):
         """open_thread fails gracefully for opened thread"""
@@ -218,7 +214,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'hid')
+        self.assertEqual(event.event_type, "hid")
 
     def test_hide_hidden_thread(self):
         """hide_thread fails gracefully for hidden thread"""
@@ -239,7 +235,7 @@ class ThreadsModerationTests(AuthenticatedUserTestCase):
         event = self.thread.last_post
 
         self.assertTrue(event.is_event)
-        self.assertEqual(event.event_type, 'unhid')
+        self.assertEqual(event.event_type, "unhid")
 
     def test_unhide_visible_thread(self):
         """unhide_thread fails gracefully for visible thread"""

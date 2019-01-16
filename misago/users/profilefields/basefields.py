@@ -2,22 +2,22 @@ from django import forms
 from django.db.models import Q
 from django.utils import html
 
-from misago.core.utils import format_plaintext_for_html
-
+from ...core.utils import format_plaintext_for_html
 
 __all__ = [
-    'ProfileField',
-    'TextProfileField',
-    'UrlProfileField',
-    'TextareaProfileField',
-    'ChoiceProfileField',
+    "ProfileField",
+    "TextProfileField",
+    "UrlProfileField",
+    "TextareaProfileField",
+    "ChoiceProfileField",
 ]
 
 
-class ProfileField(object):
+class ProfileField:
     """
     Basic profile field
     """
+
     fieldname = None
     label = None
     help_text = None
@@ -42,11 +42,11 @@ class ProfileField(object):
 
     def get_form_field_json(self, request, user):
         return {
-            'fieldname': self.fieldname,
-            'label': self.get_label(user),
-            'help_text': self.get_help_text(user),
-            'initial': user.profile_fields.get(self.fieldname, ''),
-            'input': self.get_input_json(request, user),
+            "fieldname": self.fieldname,
+            "label": self.get_label(user),
+            "help_text": self.get_help_text(user),
+            "initial": user.profile_fields.get(self.fieldname, ""),
+            "input": self.get_input_json(request, user),
         }
 
     def get_input_json(self, request, user):
@@ -56,33 +56,26 @@ class ProfileField(object):
         return data
 
     def get_display_data(self, request, user):
-        value = user.profile_fields.get(self.fieldname, '')
-        if not self.readonly and not len(value):
+        value = user.profile_fields.get(self.fieldname, "").strip()
+        if not self.readonly and not value:
             return None
 
         data = self.get_value_display_data(request, user, value)
         if not data:
             return None
 
-        data.update({
-            'fieldname': self.fieldname,
-            'name': str(self.get_label(user)),
-        })
+        data.update({"fieldname": self.fieldname, "name": str(self.get_label(user))})
 
         return data
 
     def get_value_display_data(self, request, user, value):
-        return {
-            'text': value
-        }
+        return {"text": value}
 
     def search_users(self, criteria):
         if self.readonly:
             return None
 
-        return Q(**{
-            'profile_fields__%s__contains' % self.fieldname: criteria
-        })
+        return Q(**{"profile_fields__%s__contains" % self.fieldname: criteria})
 
 
 class ChoiceProfileField(ProfileField):
@@ -108,36 +101,23 @@ class ChoiceProfileField(ProfileField):
 
     def get_input_json(self, request, user):
         choices = []
-        for key, choice in self.get_choices():
-            choices.append({
-                'value': key,
-                'label': choice,
-            })
+        for key, choice in self.get_choices():  # pylint: disable=not-an-iterable
+            choices.append({"value": key, "label": choice})
 
-        return {
-            'type': 'select',
-            'choices': choices,
-        }
+        return {"type": "select", "choices": choices}
 
     def get_value_display_data(self, request, user, value):
-        for key, name in self.get_choices():
+        for key, name in self.get_choices():  # pylint: disable=not-an-iterable
             if key == value:
-                return {
-                    'text': str(name),
-                }
-        return None
+                return {"text": str(name)}
 
     def search_users(self, criteria):
         """custom search implementation for choice fields"""
-        q_obj = Q(**{
-            'profile_fields__%s__contains' % self.fieldname: criteria
-        })
+        q_obj = Q(**{"profile_fields__%s__contains" % self.fieldname: criteria})
 
-        for key, choice in self.get_choices():
+        for key, choice in self.get_choices():  # pylint: disable=not-an-iterable
             if key and criteria.lower() in str(choice).lower():
-                q_obj = q_obj | Q(**{
-                    'profile_fields__%s' % self.fieldname: key
-                })
+                q_obj = q_obj | Q(**{"profile_fields__%s" % self.fieldname: key})
 
         return q_obj
 
@@ -154,9 +134,7 @@ class TextProfileField(ProfileField):
         )
 
     def get_input_json(self, request, user):
-        return {
-            'type': 'text',
-        }
+        return {"type": "text"}
 
 
 class TextareaProfileField(ProfileField):
@@ -166,29 +144,21 @@ class TextareaProfileField(ProfileField):
             help_text=self.get_help_text(user),
             initial=user.profile_fields.get(self.fieldname),
             max_length=500,
-            widget=forms.Textarea(
-                attrs={'rows': 4},
-            ),
+            widget=forms.Textarea(attrs={"rows": 4}),
             disabled=self.readonly,
             required=False,
         )
 
     def get_input_json(self, request, user):
-        return {
-            'type': 'textarea',
-        }
+        return {"type": "textarea"}
 
     def get_value_display_data(self, request, user, value):
-        return {
-            'html': html.linebreaks(html.escape(value)),
-        }
+        return {"html": html.linebreaks(html.escape(value))}
 
 
 class UrlifiedTextareaProfileField(TextareaProfileField):
     def get_value_display_data(self, request, user, value):
-        return {
-            'html': format_plaintext_for_html(value),
-        }
+        return {"html": format_plaintext_for_html(value)}
 
 
 class UrlProfileField(TextProfileField):
@@ -203,7 +173,4 @@ class UrlProfileField(TextProfileField):
         )
 
     def get_value_display_data(self, request, user, value):
-        return {
-            'text': value,
-            'url': value,
-        }
+        return {"text": value, "url": value}

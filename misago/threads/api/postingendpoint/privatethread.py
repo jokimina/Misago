@@ -1,8 +1,7 @@
-from misago.acl import add_acl
-from misago.categories import PRIVATE_THREADS_ROOT_NAME
-from misago.categories.models import Category
-
 from . import PostingEndpoint, PostingMiddleware
+from ....acl.objectacl import add_acl_to_obj
+from ....categories import PRIVATE_THREADS_ROOT_NAME
+from ....categories.models import Category
 
 
 class PrivateThreadMiddleware(PostingMiddleware):
@@ -16,7 +15,7 @@ class PrivateThreadMiddleware(PostingMiddleware):
     def pre_save(self, serializer):
         category = Category.objects.private_threads()
 
-        add_acl(self.user, category)
+        add_acl_to_obj(self.user_acl, category)
 
         # set flags for savechanges middleware
         category.update_all = False

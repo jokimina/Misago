@@ -1,100 +1,25 @@
 from pathlib import Path
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from misago.conf import settings
-from misago.core.utils import slugify
-
-from misago.users.avatars import dynamic
-from misago.users.models import Avatar, User
-
-
-class UserManagerTests(TestCase):
-    def test_create_user(self):
-        """create_user created new user account successfully"""
-        user = User.objects.create_user(
-            'Bob',
-            'bob@test.com',
-            'Pass.123',
-            set_default_avatar=True,
-        )
-
-        db_user = User.objects.get(id=user.pk)
-
-        self.assertEqual(user.username, db_user.username)
-        self.assertEqual(user.slug, db_user.slug)
-        self.assertEqual(user.email, db_user.email)
-        self.assertEqual(user.email_hash, db_user.email_hash)
-
-    def test_create_user_twice(self):
-        """create_user is raising validation error for duplicate users"""
-        User.objects.create_user('Bob', 'bob@test.com', 'Pass.123')
-        with self.assertRaises(ValidationError):
-            User.objects.create_user('Bob', 'bob@test.com', 'Pass.123')
-
-    def test_create_superuser(self):
-        """create_superuser created new user account successfully"""
-        user = User.objects.create_superuser('Bob', 'bob@test.com', 'Pass.123')
-
-        db_user = User.objects.get(id=user.pk)
-
-        self.assertTrue(user.is_staff)
-        self.assertTrue(db_user.is_staff)
-        self.assertTrue(user.is_superuser)
-        self.assertTrue(db_user.is_superuser)
-
-    def test_get_user(self):
-        """get_by_ methods return user correctly"""
-        user = User.objects.create_user('Bob', 'bob@test.com', 'Pass.123')
-
-        db_user = User.objects.get_by_username(user.username)
-        self.assertEqual(user, db_user)
-
-        db_user = User.objects.get_by_email(user.email)
-        self.assertEqual(user, db_user)
-
-        db_user = User.objects.get_by_username_or_email(user.username)
-        self.assertEqual(user, db_user)
-
-        db_user = User.objects.get_by_username_or_email(user.email)
-        self.assertEqual(user, db_user)
-
-    def test_get_by_username_or_email_multiple_results(self):
-        """get_by_username_or_email method handles multiple results"""
-        email_match = User.objects.create_user('Bob', 'test@test.test', 'Pass.123')
-        slug_match = User.objects.create_user('TestTestTest', 'bob@test.com', 'Pass.123')
-
-        db_user = User.objects.get_by_username_or_email('test@test.test')
-        self.assertEqual(email_match, db_user)
-
-        db_user = User.objects.get_by_username_or_email('TestTestTest')
-        self.assertEqual(slug_match, db_user)
-
-    def test_getters_unicode_handling(self):
-        """get_by_ methods handle unicode"""
-        with self.assertRaises(User.DoesNotExist):
-            User.objects.get_by_username('łóć')
-
-        with self.assertRaises(User.DoesNotExist):
-            User.objects.get_by_email('łóć@polskimail.pl')
-
-        with self.assertRaises(User.DoesNotExist):
-            User.objects.get_by_username_or_email('łóć@polskimail.pl')
+from ...conf import settings
+from ...core.utils import slugify
+from ..avatars import dynamic
+from ..models import Avatar, User
 
 
-class UserModelTests(TestCase):
+class UserTests(TestCase):
     def test_anonymize_data(self):
         """anonymize_data sets username and slug to one defined in settings"""
-        user = User.objects.create_user('Bob', 'bob@example.com', 'Pass.123')
+        user = User.objects.create_user("User", "user@example.com")
 
         user.anonymize_data()
         self.assertEqual(user.username, settings.MISAGO_ANONYMOUS_USERNAME)
         self.assertEqual(user.slug, slugify(settings.MISAGO_ANONYMOUS_USERNAME))
 
-    def test_delete_avatar_on_delete(self):
+    def test_user_avatar_files_are_deleted_together_with_user(self):
         """account deletion for user also deletes their avatar file"""
-        user = User.objects.create_user('Bob', 'bob@example.com', 'Pass.123')
+        user = User.objects.create_user("User", "user@example.com")
         dynamic.set_avatar(user)
         user.save()
 
@@ -105,7 +30,7 @@ class UserModelTests(TestCase):
             self.assertTrue(avatar_path.is_file())
             user_avatars.append(avatar)
         self.assertNotEqual(user_avatars, [])
-        
+
         user.delete()
 
         for removed_avatar in user_avatars:
@@ -120,25 +45,25 @@ class UserModelTests(TestCase):
         """set_username sets username and slug on model"""
         user = User()
 
-        user.set_username('Boberson')
-        self.assertEqual(user.username, 'Boberson')
-        self.assertEqual(user.slug, 'boberson')
+        user.set_username("Username")
+        self.assertEqual(user.username, "Username")
+        self.assertEqual(user.slug, "username")
 
-        self.assertEqual(user.get_username(), 'Boberson')
-        self.assertEqual(user.get_full_name(), 'Boberson')
-        self.assertEqual(user.get_short_name(), 'Boberson')
+        self.assertEqual(user.get_username(), "Username")
+        self.assertEqual(user.get_full_name(), "Username")
+        self.assertEqual(user.get_short_name(), "Username")
 
     def test_set_email(self):
         """set_email sets email and hash on model"""
         user = User()
 
-        user.set_email('bOb@TEst.com')
-        self.assertEqual(user.email, 'bOb@test.com')
+        user.set_email("us3R@EXample.com")
+        self.assertEqual(user.email, "us3R@example.com")
         self.assertTrue(user.email_hash)
 
     def test_mark_for_delete(self):
         """mark_for_delete deactivates user and sets is_deleting_account flag"""
-        user = User.objects.create_user('Bob', 'bob@example.com', 'Pass.123')
+        user = User.objects.create_user("User", "user@example.com")
         user.mark_for_delete()
         self.assertFalse(user.is_active)
         self.assertTrue(user.is_deleting_account)
@@ -149,8 +74,8 @@ class UserModelTests(TestCase):
 
     def test_get_real_name(self):
         """get_real_name returns user-set real name or none"""
-        user = User.objects.create_user('Bob', 'bob@example.com', 'Pass.123')
+        user = User.objects.create_user("User", "user@example.com")
         self.assertIsNone(user.get_real_name())
 
-        user.profile_fields['real_name'] = 'Bob Boberson'
-        self.assertEqual(user.get_real_name(), 'Bob Boberson')
+        user.profile_fields["real_name"] = "User Usererson"
+        self.assertEqual(user.get_real_name(), "User Usererson")

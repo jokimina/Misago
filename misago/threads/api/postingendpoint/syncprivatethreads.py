@@ -1,7 +1,6 @@
-from misago.categories import PRIVATE_THREADS_ROOT_NAME
-from misago.threads.participants import set_users_unread_private_threads_sync
-
 from . import PostingEndpoint, PostingMiddleware
+from ....categories import PRIVATE_THREADS_ROOT_NAME
+from ...participants import set_users_unread_private_threads_sync
 
 
 class SyncPrivateThreadsMiddleware(PostingMiddleware):
@@ -14,6 +13,5 @@ class SyncPrivateThreadsMiddleware(PostingMiddleware):
 
     def post_save(self, serializer):
         set_users_unread_private_threads_sync(
-            participants=self.thread.participants_list,
-            exclude_user=self.user,
+            participants=self.thread.participants_list, exclude_user=self.user
         )

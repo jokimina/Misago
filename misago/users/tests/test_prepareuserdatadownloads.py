@@ -3,11 +3,11 @@ from io import StringIO
 from django.core import mail
 from django.core.management import call_command
 
-from misago.conf import settings
-from misago.users.datadownloads import request_user_data_download
-from misago.users.management.commands import prepareuserdatadownloads
-from misago.users.models import DataDownload
-from misago.users.testutils import AuthenticatedUserTestCase
+from ...conf import settings
+from ..datadownloads import request_user_data_download
+from ..management.commands import prepareuserdatadownloads
+from ..models import DataDownload
+from ..test import AuthenticatedUserTestCase
 
 
 class PrepareUserDataDownloadsTests(AuthenticatedUserTestCase):
@@ -28,9 +28,13 @@ class PrepareUserDataDownloadsTests(AuthenticatedUserTestCase):
         self.assertTrue(updated_data_download.file)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "TestUser, your data download is ready")
+        self.assertEqual(
+            mail.outbox[0].subject, "TestUser, your data download is ready"
+        )
 
-        absolute_url = ''.join([settings.MISAGO_ADDRESS.rstrip('/'), updated_data_download.file.url])
+        absolute_url = "".join(
+            [settings.MISAGO_ADDRESS.rstrip("/"), updated_data_download.file.url]
+        )
         self.assertIn(absolute_url, mail.outbox[0].body)
 
     def test_skip_ready_data_download(self):
@@ -64,7 +68,7 @@ class PrepareUserDataDownloadsTests(AuthenticatedUserTestCase):
 
         updated_data_download = DataDownload.objects.get(pk=data_download.pk)
         self.assertEqual(updated_data_download.status, DataDownload.STATUS_PROCESSING)
-        
+
         self.assertEqual(len(mail.outbox), 0)
 
     def test_skip_expired_data_download(self):
@@ -81,5 +85,5 @@ class PrepareUserDataDownloadsTests(AuthenticatedUserTestCase):
 
         updated_data_download = DataDownload.objects.get(pk=data_download.pk)
         self.assertEqual(updated_data_download.status, DataDownload.STATUS_EXPIRED)
-        
+
         self.assertEqual(len(mail.outbox), 0)

@@ -1,17 +1,15 @@
-from rest_framework.decorators import api_view
-
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse
-from social_core.exceptions import AuthFailed, NotAllowedToDisconnect, WrongBackend
+from rest_framework.decorators import api_view
 from social_core.backends.github import GithubOAuth2
+from social_core.exceptions import AuthFailed, NotAllowedToDisconnect, WrongBackend
 
-from misago.core import errorpages
-from misago.core.decorators import require_POST
-from misago.core.exceptions import Banned, SocialAuthBanned, SocialAuthFailed
-from misago.core.shortcuts import paginate, paginated_response, validate_slug
-from misago.core.views import home_redirect
-from misago.users.models import Ban
-
+from .. import errorpages
+from ...users.models import Ban
+from ..decorators import require_POST
+from ..exceptions import Banned, SocialAuthBanned, SocialAuthFailed
+from ..shortcuts import paginate, paginated_response, validate_slug
+from ..views import home_redirect
 from .models import Model
 from .serializers import MockSerializer
 
@@ -35,7 +33,7 @@ def test_paginated_response_data(request):
     data = range(100)
     page = paginate(data, 2, 10)
 
-    return paginated_response(page, data=['a', 'b', 'c', 'd', 'e'])
+    return paginated_response(page, data=["a", "b", "c", "d", "e"])
 
 
 @api_view()
@@ -52,9 +50,7 @@ def test_paginated_response_data_serializer(request):
     page = paginate(data, 0, 10)
 
     return paginated_response(
-        page,
-        data=['a', 'b', 'c', 'd'],
-        serializer=MockSerializer,
+        page, data=["a", "b", "c", "d"], serializer=MockSerializer
     )
 
 
@@ -64,17 +60,12 @@ def test_paginated_response_data_extra(request):
     page = paginate(data, 0, 10)
 
     return paginated_response(
-        page,
-        data=['a', 'b', 'c', 'd'],
-        extra={
-            'next': 'EXTRA',
-            'lorem': 'ipsum',
-        },
+        page, data=["a", "b", "c", "d"], extra={"next": "EXTRA", "lorem": "ipsum"}
     )
 
 
 def validate_slug_view(request, pk, slug):
-    model = Model(int(pk), 'eric-the-fish')
+    model = Model(int(pk), "eric-the-fish")
     validate_slug(model, slug)
     return HttpResponse("Allright!")
 
@@ -85,11 +76,11 @@ def raise_misago_banned(request):
 
 
 def raise_misago_403(request):
-    raise PermissionDenied('Misago 403')
+    raise PermissionDenied("Misago 403")
 
 
 def raise_misago_404(request):
-    raise Http404('Misago 404')
+    raise Http404("Misago 404")
 
 
 def raise_misago_405(request):
@@ -109,7 +100,7 @@ def raise_social_auth_failed(require_POST):
 
 
 def raise_social_wrong_backend(request):
-    raise WrongBackend('facebook')
+    raise WrongBackend("facebook")
 
 
 def raise_social_not_allowed_to_disconnect(request):

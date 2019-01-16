@@ -2,16 +2,16 @@ from django.contrib import messages
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 
-from misago.admin.views import generic
-from misago.threads.forms import AttachmentTypeForm
-from misago.threads.models import AttachmentType
+from ....admin.views import generic
+from ...forms import AttachmentTypeForm
+from ...models import AttachmentType
 
 
 class AttachmentTypeAdmin(generic.AdminBaseMixin):
-    root_link = 'misago:admin:system:attachment-types:index'
+    root_link = "misago:admin:system:attachment-types:index"
     model = AttachmentType
     form = AttachmentTypeForm
-    templates_dir = 'misago/admin/attachmenttypes'
+    templates_dir = "misago/admin/attachmenttypes"
     message_404 = _("Requested attachment type could not be found.")
 
     def update_roles(self, target, roles):
@@ -25,11 +25,11 @@ class AttachmentTypeAdmin(generic.AdminBaseMixin):
 
 
 class AttachmentTypesList(AttachmentTypeAdmin, generic.ListView):
-    ordering = (('name', None), )
+    ordering = (("name", None),)
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.annotate(num_files=Count('attachment'))
+        return queryset.annotate(num_files=Count("attachment"))
 
 
 class NewAttachmentType(AttachmentTypeAdmin, generic.ModelFormView):
@@ -44,11 +44,12 @@ class DeleteAttachmentType(AttachmentTypeAdmin, generic.ButtonView):
     def check_permissions(self, request, target):
         if target.attachment_set.exists():
             message = _(
-                'Attachment type "%(name)s" has associated attachments and can\'t be deleted.'
+                'Attachment type "%(name)s" has '
+                "associated attachments and can't be deleted."
             )
-            return message % {'name': target.name}
+            return message % {"name": target.name}
 
     def button_action(self, request, target):
         target.delete()
         message = _('Attachment type "%(name)s" has been deleted.')
-        messages.success(request, message % {'name': target.name})
+        messages.success(request, message % {"name": target.name})

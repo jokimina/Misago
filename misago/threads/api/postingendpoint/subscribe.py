@@ -1,11 +1,9 @@
 from django.contrib.auth import get_user_model
 
-from misago.threads.models import Subscription
-
 from . import PostingEndpoint, PostingMiddleware
+from ...models import Subscription
 
-
-UserModel = get_user_model()
+User = get_user_model()
 
 
 class SubscribeMiddleware(PostingMiddleware):
@@ -20,20 +18,20 @@ class SubscribeMiddleware(PostingMiddleware):
         if self.mode != PostingEndpoint.START:
             return
 
-        if self.user.subscribe_to_started_threads == UserModel.SUBSCRIBE_NONE:
+        if self.user.subscribe_to_started_threads == User.SUBSCRIPTION_NONE:
             return
 
         self.user.subscription_set.create(
             category=self.thread.category,
             thread=self.thread,
-            send_email=self.user.subscribe_to_started_threads == UserModel.SUBSCRIBE_ALL,
+            send_email=self.user.subscribe_to_started_threads == User.SUBSCRIPTION_ALL,
         )
 
     def subscribe_replied_thread(self):
         if self.mode != PostingEndpoint.REPLY:
             return
 
-        if self.user.subscribe_to_replied_threads == UserModel.SUBSCRIBE_NONE:
+        if self.user.subscribe_to_replied_threads == User.SUBSCRIPTION_NONE:
             return
 
         try:
@@ -43,11 +41,8 @@ class SubscribeMiddleware(PostingMiddleware):
 
         # posts user's posts in this thread, minus events and current post
         posts_queryset = self.user.post_set.filter(
-            thread=self.thread,
-            is_event=False,
-        ).exclude(
-            pk=self.post.pk,
-        )
+            thread=self.thread, is_event=False
+        ).exclude(pk=self.post.pk)
 
         if posts_queryset.exists():
             return
@@ -55,5 +50,5 @@ class SubscribeMiddleware(PostingMiddleware):
         self.user.subscription_set.create(
             category=self.thread.category,
             thread=self.thread,
-            send_email=self.user.subscribe_to_replied_threads == UserModel.SUBSCRIBE_ALL,
+            send_email=self.user.subscribe_to_replied_threads == User.SUBSCRIPTION_ALL,
         )

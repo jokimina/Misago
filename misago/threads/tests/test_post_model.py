@@ -1,20 +1,17 @@
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
-from misago.categories.models import Category
-from misago.threads.checksums import update_post_checksum
-from misago.threads.models import Post, Thread
-
-
-UserModel = get_user_model()
+from ...categories.models import Category
+from ...users.test import create_test_user
+from ..checksums import update_post_checksum
+from ..models import Post, Thread
 
 
 class PostModelTests(TestCase):
     def setUp(self):
-        self.user = UserModel.objects.create_user("Bob", "bob@bob.com", "Pass.123")
+        self.user = create_test_user("User", "user@example.com")
 
         datetime = timezone.now()
 
@@ -22,11 +19,11 @@ class PostModelTests(TestCase):
         self.thread = Thread(
             category=self.category,
             started_on=datetime,
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=datetime,
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         self.thread.set_title("Test thread")
@@ -45,7 +42,7 @@ class PostModelTests(TestCase):
         )
 
         update_post_checksum(self.post)
-        self.post.save(update_fields=['checksum'])
+        self.post.save(update_fields=["checksum"])
 
         self.thread.first_post = self.post
         self.thread.last_post = self.post
@@ -57,16 +54,16 @@ class PostModelTests(TestCase):
         with self.assertRaises(ValueError):
             self.post.merge(self.post)
 
-        other_user = UserModel.objects.create_user("Jeff", "Je@ff.com", "Pass.123")
+        other_user = create_test_user("OtherUser", "otheruser@example.com")
 
         other_thread = Thread.objects.create(
             category=self.category,
             started_on=timezone.now(),
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=timezone.now(),
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         # can't merge with other users posts
@@ -195,11 +192,11 @@ class PostModelTests(TestCase):
         new_thread = Thread.objects.create(
             category=self.category,
             started_on=timezone.now(),
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=timezone.now(),
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         self.post.move(new_thread)

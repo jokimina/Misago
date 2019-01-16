@@ -1,8 +1,7 @@
+from django.utils import timezone
 from rest_framework.request import Request
 
-from django.utils import timezone
-
-from misago.users.models import Online
+from ..models import Online
 
 
 def mute_tracker(request):
@@ -19,18 +18,18 @@ def start_tracking(request, user):
 def update_tracker(request, tracker):
     tracker.last_click = timezone.now()
 
-    tracker.save(update_fields=['last_click'])
+    tracker.save(update_fields=["last_click"])
 
 
 def stop_tracking(request, tracker):
     user = tracker.user
     user.last_login = tracker.last_click
-    user.save(update_fields=['last_login'])
+    user.save(update_fields=["last_login"])
 
     tracker.delete()
 
 
 def clear_tracking(request):
     if isinstance(request, Request):
-        request = request._request  # Fugly unwrap restframework's request 
+        request = request._request  # Fugly unwrap restframework's request
     request._misago_online_tracker = None

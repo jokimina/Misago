@@ -1,23 +1,20 @@
 from django.urls import reverse, NoReverseMatch
 from django.shortcuts import render as dj_render
 
-from misago.conf import settings
-
-from misago.admin import site
-from misago.admin.auth import is_admin_session, update_admin_session
+from ...conf import settings
+from .. import site
+from ..auth import is_admin_authorized, update_admin_authorization
 from .auth import login
 
 
 def get_protected_namespace(request):
     for namespace in settings.MISAGO_ADMIN_NAMESPACES:
         try:
-            admin_path = reverse('%s:index' % namespace)
+            admin_path = reverse("%s:index" % namespace)
             if request.path.startswith(admin_path):
                 return namespace
         except NoReverseMatch:
             pass
-    else:
-        return None
 
 
 def render(request, template, context=None, error_page=False):
@@ -36,19 +33,19 @@ def render(request, template, context=None, error_page=False):
     except IndexError:
         pages = []
 
-    context.update({'sections': sections, 'actions': actions, 'pages': pages})
+    context.update({"sections": sections, "actions": actions, "pages": pages})
 
     if error_page:
         # admittedly haxy solution for displaying navs on error pages
-        context['actions'] = []
-        context['pages'] = []
+        context["actions"] = []
+        context["pages"] = []
         for item in navigation[0]:
-            item['is_active'] = False
+            item["is_active"] = False
     else:
-        context['active_link'] = None
+        context["active_link"] = None
         for item in navigation[-1]:
-            if item['is_active']:
-                context['active_link'] = item
+            if item["is_active"]:
+                context["active_link"] = item
                 break
 
     return dj_render(request, template, context)
@@ -59,13 +56,11 @@ def protected_admin_view(f):
     def decorator(request, *args, **kwargs):
         protected_view = get_protected_namespace(request)
         if protected_view:
-            if is_admin_session(request):
-                update_admin_session(request)
+            if is_admin_authorized(request):
+                update_admin_authorization(request)
                 return f(request, *args, **kwargs)
-            else:
-                request.admin_namespace = protected_view
-                return login(request)
-        else:
-            return f(request, *args, **kwargs)
+            request.admin_namespace = protected_view
+            return login(request)
+        return f(request, *args, **kwargs)
 
     return decorator

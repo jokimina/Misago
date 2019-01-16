@@ -3,10 +3,10 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
-from misago.categories.models import Category
-from misago.threads import testutils
-from misago.threads.management.commands import updatepostschecksums
-from misago.threads.models import Post
+from .. import test
+from ...categories.models import Category
+from ..management.commands import updatepostschecksums
+from ..models import Post
 
 
 class UpdatePostsChecksumsTests(TestCase):
@@ -24,12 +24,12 @@ class UpdatePostsChecksumsTests(TestCase):
         """command updates posts checksums"""
         category = Category.objects.all_categories()[:1][0]
 
-        threads = [testutils.post_thread(category) for _ in range(5)]
+        threads = [test.post_thread(category) for _ in range(5)]
         for _, thread in enumerate(threads):
-            [testutils.reply_thread(thread) for _ in range(3)]
+            [test.reply_thread(thread) for _ in range(3)]
             thread.save()
 
-        Post.objects.update(parsed='Hello world!')
+        Post.objects.update(parsed="Hello world!")
         for post in Post.objects.all():
             self.assertFalse(post.is_valid)
 

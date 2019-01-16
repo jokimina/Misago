@@ -2,42 +2,42 @@ from django.contrib import messages
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from misago.admin.views import generic
-
-from misago.legal.forms import AgreementForm, SearchAgreementsForm
-from misago.legal.models import Agreement
-from misago.legal.utils import set_agreement_as_active
+from ...admin.views import generic
+from ..forms import AgreementForm, SearchAgreementsForm
+from ..models import Agreement
+from ..utils import set_agreement_as_active
 
 
 class AgreementAdmin(generic.AdminBaseMixin):
-    root_link = 'misago:admin:users:agreements:index'
+    root_link = "misago:admin:users:agreements:index"
     model = Agreement
     form = AgreementForm
-    templates_dir = 'misago/admin/agreements'
+    templates_dir = "misago/admin/agreements"
     message_404 = _("Requested agreement does not exist.")
 
     def handle_form(self, form, request, target):
         form.save()
-        
+
         if self.message_submit:
-            messages.success(request, self.message_submit % {'title': target.get_final_title()})
+            messages.success(
+                request, self.message_submit % {"title": target.get_final_title()}
+            )
 
 
 class AgreementsList(AgreementAdmin, generic.ListView):
     items_per_page = 30
-    ordering = [
-        ('-id', _("From newest")),
-        ('id', _("From oldest")),
-    ]
+    ordering = [("-id", _("From newest")), ("id", _("From oldest"))]
     search_form = SearchAgreementsForm
-    selection_label = _('With agreements: 0')
-    empty_selection_label = _('Select agreements')
-    mass_actions = ({
-        'action': 'delete',
-        'icon': 'fa fa-times',
-        'name': _('Delete agreements'),
-        'confirmation': _('Are you sure you want to delete those agreements?')
-    }, )
+    selection_label = _("With agreements: 0")
+    empty_selection_label = _("Select agreements")
+    mass_actions = (
+        {
+            "action": "delete",
+            "icon": "fa fa-times",
+            "name": _("Delete agreements"),
+            "confirmation": _("Are you sure you want to delete those agreements?"),
+        },
+    )
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -51,7 +51,7 @@ class AgreementsList(AgreementAdmin, generic.ListView):
 
 class NewAgreement(AgreementAdmin, generic.ModelFormView):
     message_submit = _('New agreement "%(title)s" has been saved.')
-    
+
     def handle_form(self, form, request, target):
         super().handle_form(form, request, target)
 
@@ -75,7 +75,7 @@ class DeleteAgreement(AgreementAdmin, generic.ButtonView):
         target.delete()
         Agreement.objects.invalidate_cache()
         message = _('Agreement "%(title)s" has been deleted.')
-        messages.success(request, message % {'title': target.get_final_title()})
+        messages.success(request, message % {"title": target.get_final_title()})
 
 
 class SetAgreementAsActive(AgreementAdmin, generic.ButtonView):
@@ -83,5 +83,8 @@ class SetAgreementAsActive(AgreementAdmin, generic.ButtonView):
         set_agreement_as_active(target, commit=True)
 
         message = _('Agreement "%(title)s" has been set as active for type "%(type)s".')
-        targets_names = {'title': target.get_final_title(), 'type': target.get_type_display()}
+        targets_names = {
+            "title": target.get_final_title(),
+            "type": target.get_type_display(),
+        }
         messages.success(request, message % targets_names)

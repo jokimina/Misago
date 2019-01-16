@@ -1,9 +1,9 @@
-class NofieldnameField(object):
+class NofieldnameField:
     pass
 
 
-class FieldnameField(object):
-    fieldname = 'hello'
+class FieldnameField:
+    fieldname = "hello"
 
 
 class RepeatedFieldnameField(FieldnameField):

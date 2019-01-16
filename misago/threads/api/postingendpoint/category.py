@@ -1,21 +1,21 @@
-from rest_framework import serializers
-
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
-
-from misago.acl import add_acl
-from misago.categories import THREADS_ROOT_NAME
-from misago.categories.models import Category
-from misago.categories.permissions import can_browse_category, can_see_category
-from misago.threads.permissions import allow_start_thread
-from misago.threads.threadtypes import trees_map
+from rest_framework import serializers
 
 from . import PostingEndpoint, PostingMiddleware
+from ....acl.objectacl import add_acl_to_obj
+from ....categories import THREADS_ROOT_NAME
+from ....categories.models import Category
+from ....categories.permissions import can_browse_category, can_see_category
+from ...permissions import allow_start_thread
+from ...threadtypes import trees_map
 
 
 class CategoryMiddleware(PostingMiddleware):
-    """middleware that validates category id and sets category on thread and post instances"""
+    """
+    middleware that validates category id and sets category on thread and post instances
+    """
 
     def use_this_middleware(self):
         if self.mode == PostingEndpoint.START:
@@ -23,12 +23,12 @@ class CategoryMiddleware(PostingMiddleware):
         return False
 
     def get_serializer(self):
-        return CategorySerializer(self.user, data=self.request.data)
+        return CategorySerializer(self.user_acl, data=self.request.data)
 
     def pre_save(self, serializer):
         category = serializer.category_cache
 
-        add_acl(self.user, category)
+        add_acl_to_obj(self.user_acl, category)
 
         # set flags for savechanges middleware
         category.update_all = False
@@ -42,13 +42,13 @@ class CategoryMiddleware(PostingMiddleware):
 class CategorySerializer(serializers.Serializer):
     category = serializers.IntegerField(
         error_messages={
-            'required': gettext_lazy("You have to select category to post thread in."),
-            'invalid': gettext_lazy("Selected category is invalid."),
+            "required": gettext_lazy("You have to select category to post thread in."),
+            "invalid": gettext_lazy("Selected category is invalid."),
         }
     )
 
-    def __init__(self, user, *args, **kwargs):
-        self.user = user
+    def __init__(self, user_acl, *args, **kwargs):
+        self.user_acl = user_acl
         self.category_cache = None
 
         super().__init__(*args, **kwargs)
@@ -59,15 +59,18 @@ class CategorySerializer(serializers.Serializer):
                 pk=value, tree_id=trees_map.get_tree_id_for_root(THREADS_ROOT_NAME)
             )
 
-            can_see = can_see_category(self.user, self.category_cache)
-            can_browse = can_browse_category(self.user, self.category_cache)
+            can_see = can_see_category(self.user_acl, self.category_cache)
+            can_browse = can_browse_category(self.user_acl, self.category_cache)
             if not (self.category_cache.level and can_see and can_browse):
                 raise PermissionDenied(_("Selected category is invalid."))
 
-            allow_start_thread(self.user, self.category_cache)
-        except PermissionDenied as e:
-            raise serializers.ValidationError(e.args[0])
+            allow_start_thread(self.user_acl, self.category_cache)
         except Category.DoesNotExist:
             raise serializers.ValidationError(
-                _("Selected category doesn't exist or you don't have permission to browse it.")
+                _(
+                    "Selected category doesn't exist or "
+                    "you don't have permission to browse it."
+                )
             )
+        except PermissionDenied as e:
+            raise serializers.ValidationError(e.args[0])

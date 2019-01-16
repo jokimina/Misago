@@ -1,25 +1,22 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from misago.markup.parser import parse
+from ...users.test import create_test_user
+from ..parser import parse
 
 
-UserModel = get_user_model()
-
-
-class MockRequest(object):
-    scheme = 'http'
+class MockRequest:
+    scheme = "http"
 
     def __init__(self, user=None):
         self.user = user
 
     def get_host(self):
-        return 'test.com'
+        return "test.com"
 
 
-class MockPoster(object):
-    username = 'LoremIpsum'
-    slug = 'loremipsum'
+class MockPoster:
+    username = "LoremIpsum"
+    slug = "loremipsum"
 
 
 class HTMLTests(TestCase):
@@ -34,10 +31,10 @@ Lorem <strong>ipsum!</strong>
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
 
 class BBCodeTests(TestCase):
@@ -73,7 +70,7 @@ Lorem [b]ipsum[/B].
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_hr(self):
         """hr bbcode is correctly parsed"""
@@ -90,7 +87,7 @@ Dolor met.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_img(self):
         """img bbcode is correctly parsed"""
@@ -109,7 +106,7 @@ Lorem ipsum !(https://placekitten.com/g/1200/500)
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_url(self):
         """url bbcode is correctly parsed"""
@@ -131,7 +128,7 @@ Lorem ipsum [Lorem ipsum](https://placekitten.com/g/1200/500)
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
 
 class MinifyTests(TestCase):
@@ -148,7 +145,7 @@ Lorem ipsum.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_minified_unicode_text(self):
         """parser minifies unicode text successfully"""
@@ -163,22 +160,28 @@ Lorem ipsum.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_complex_paragraph(self):
         """parser minifies complex paragraph"""
-        user = UserModel.objects.create_user('Bob', 'bob@test.com', 'Pass123')
+        user = create_test_user("User", "user@example.com")
 
-        test_text = """
+        test_text = (
+            """
 Hey there @%s, how's going?
-""".strip() % user
+""".strip()
+            % user
+        )
 
         expected_result = """
 <p>Hey there <a href="%s">@%s</a>, how's going?</p>
-""".strip() % (user.get_absolute_url(), user)
+""".strip() % (
+            user.get_absolute_url(),
+            user,
+        )
 
         result = parse(test_text, MockRequest(user), user, minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
 
 class CleanLinksTests(TestCase):
@@ -193,10 +196,10 @@ Lorem ipsum: http://test.com
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['internal_links'], ['/'])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["internal_links"], ["/"])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_clean_schemaless_link(self):
         """clean_links step cleans test.com"""
@@ -209,10 +212,10 @@ Lorem ipsum: test.com
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['internal_links'], ['/'])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["internal_links"], ["/"])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_trim_current_path(self):
         """clean_links step leaves http://test.com path"""
@@ -225,10 +228,10 @@ Lorem ipsum: http://test.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['internal_links'], ['/somewhere-something/'])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["internal_links"], ["/somewhere-something/"])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_clean_outgoing_link_domain(self):
         """clean_links step leaves outgoing domain link"""
@@ -241,10 +244,10 @@ Lorem ipsum: http://somewhere.com
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['outgoing_links'], ['somewhere.com'])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['internal_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["outgoing_links"], ["somewhere.com"])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["internal_links"], [])
 
     def test_trim_outgoing_path(self):
         """clean_links step leaves outgoing link domain and path"""
@@ -257,10 +260,12 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['outgoing_links'], ['somewhere.com/somewhere-something/'])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['internal_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(
+            result["outgoing_links"], ["somewhere.com/somewhere-something/"]
+        )
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["internal_links"], [])
 
     def test_clean_local_image_src(self):
         """clean_links step cleans local image src"""
@@ -273,10 +278,10 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['images'], ['/image.jpg'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["images"], ["/image.jpg"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_clean_remote_image_src(self):
         """clean_links step cleans remote image src"""
@@ -289,10 +294,10 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['images'], ['somewhere.com/image.jpg'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["images"], ["somewhere.com/image.jpg"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_clean_linked_image(self):
         """parser handles image element nested in link"""
@@ -305,10 +310,10 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['images'], ['/a/thumb/test/43/'])
-        self.assertEqual(result['internal_links'], ['/a/test/43/'])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["images"], ["/a/thumb/test/43/"])
+        self.assertEqual(result["internal_links"], ["/a/test/43/"])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_force_shva(self):
         """parser appends ?shva=1 bit to attachment links if flag is present"""
@@ -320,11 +325,13 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 <p><img alt="3.png" src="/a/thumb/test/43/?shva=1"/></p>
 """.strip()
 
-        result = parse(test_text, MockRequest(), MockPoster(), minify=True, force_shva=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['images'], ['/a/thumb/test/43/'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        result = parse(
+            test_text, MockRequest(), MockPoster(), minify=True, force_shva=True
+        )
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["images"], ["/a/thumb/test/43/"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
     def test_remove_shva(self):
         """parser removes ?shva=1 bit from attachment links if flag is absent"""
@@ -337,10 +344,10 @@ Lorem ipsum: http://somewhere.com/somewhere-something/
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['images'], ['/a/thumb/test/43/?shva=1'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["images"], ["/a/thumb/test/43/?shva=1"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
 
 class LinkifyTests(TestCase):
@@ -355,10 +362,10 @@ Lorem ipsum: `<http://test.com>`
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=True)
-        self.assertEqual(expected_result, result['parsed_text'])
-        self.assertEqual(result['internal_links'], [])
-        self.assertEqual(result['images'], [])
-        self.assertEqual(result['outgoing_links'], [])
+        self.assertEqual(expected_result, result["parsed_text"])
+        self.assertEqual(result["internal_links"], [])
+        self.assertEqual(result["images"], [])
+        self.assertEqual(result["outgoing_links"], [])
 
 
 class StriketroughTests(TestCase):
@@ -373,7 +380,7 @@ Lorem ~~ipsum, dolor~~ met.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
 
 class QuoteTests(TestCase):
@@ -415,7 +422,7 @@ Lorem ipsum.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_authored_quotes(self):
         """bbcode for authored quote is supported and handles mentions as well"""
@@ -456,7 +463,7 @@ Lorem ipsum.
 
         request = MockRequest(user=MockPoster())
         result = parse(test_text, request, MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_custom_quote_title(self):
         """parser handles custom quotetitle"""
@@ -476,7 +483,7 @@ Lorem ipsum.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_hr_edge_case(self):
         """test for weird edge case in which hr gets moved outside of quote"""
@@ -502,7 +509,7 @@ Amet elit
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
 
 class CodeTests(TestCase):
@@ -521,7 +528,7 @@ Dolor [b]met.[/b]
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_inline_code(self):
         """inline code bbcode is correctly parsed"""
@@ -537,7 +544,7 @@ Lorem ipsum.
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_code_strip(self):
         """code bbcode trims its content"""
@@ -557,7 +564,7 @@ Lorem ipsum.
 <pre><code>   Dolor [b]met.[/b]</code></pre>
 """.strip()
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_code_language(self):
         """code bbcode with language is correctly parsed"""
@@ -575,7 +582,7 @@ Dolor [b]met.[/b]
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
     def test_code_language_optional_quotes(self):
         """code quotes around language name are optional"""
@@ -593,7 +600,7 @@ Dolor [b]met.[/b]
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])
 
         test_text = """
 Lorem ipsum.
@@ -609,4 +616,4 @@ Dolor [b]met.[/b]
 """.strip()
 
         result = parse(test_text, MockRequest(), MockPoster(), minify=False)
-        self.assertEqual(expected_result, result['parsed_text'])
+        self.assertEqual(expected_result, result["parsed_text"])

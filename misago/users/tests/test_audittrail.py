@@ -3,18 +3,17 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from misago.users.audittrail import create_audit_trail, create_user_audit_trail
-from misago.users.models import AuditTrail
-from misago.users.signals import remove_old_ips
-from misago.users.testutils import UserTestCase
+from ..audittrail import create_audit_trail, create_user_audit_trail
+from ..models import AuditTrail
+from ..signals import remove_old_ips
+from ..test import UserTestCase, create_test_user
+
+User = get_user_model()
+
+USER_IP = "13.41.51.41"
 
 
-UserModel = get_user_model()
-
-USER_IP = '13.41.51.41'
-
-
-class MockRequest(object):
+class MockRequest:
     user_ip = USER_IP
 
     def __init__(self, user):
@@ -25,7 +24,7 @@ class CreateAuditTrailTests(UserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.obj = UserModel.objects.create_user('BobBoberson', 'bob@example.com')
+        self.obj = create_test_user("OtherUser", "user@example.com")
 
     def test_create_audit_require_model(self):
         """create_audit_trail requires model instance"""
@@ -88,16 +87,16 @@ class CreateAuditTrailTests(UserTestCase):
 
         audit_trail = user.audittrail_set.all()[0]
         audit_trail.delete()
-        
-        UserModel.objects.get(id=user.id)
-        UserModel.objects.get(id=self.obj.id)
+
+        User.objects.get(id=user.id)
+        User.objects.get(id=self.obj.id)
 
 
 class CreateUserAuditTrailTests(UserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.obj = UserModel.objects.create_user('BobBoberson', 'bob@example.com')
+        self.obj = create_test_user("OtherUser", "user@example.com")
 
     def test_create_user_audit_require_model(self):
         """create_user_audit_trail requires model instance"""
@@ -154,21 +153,21 @@ class CreateUserAuditTrailTests(UserTestCase):
 
         audit_trail = user.audittrail_set.all()[0]
         audit_trail.delete()
-        
-        UserModel.objects.get(id=user.id)
-        UserModel.objects.get(id=self.obj.id)
+
+        User.objects.get(id=user.id)
+        User.objects.get(id=self.obj.id)
 
 
 class RemoveOldAuditTrailsTest(UserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.obj = UserModel.objects.create_user('BobBoberson', 'bob@example.com')
-        
+        self.obj = create_test_user("OtherUser", "user@example.com")
+
     def test_recent_audit_trail_is_kept(self):
         """remove_old_ips keeps recent audit trails"""
         user = self.get_authenticated_user()
-        audit_trail = create_user_audit_trail(user, USER_IP, self.obj)
+        create_user_audit_trail(user, USER_IP, self.obj)
 
         remove_old_ips.send(None)
 

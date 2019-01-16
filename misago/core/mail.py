@@ -2,30 +2,33 @@ from django.core import mail as djmail
 from django.template.loader import render_to_string
 from django.utils.translation import get_language
 
-from misago.conf import db_settings, settings
-
+from ..conf import settings
 from .utils import get_host_from_address
 
 
 def build_mail(recipient, subject, template, sender=None, context=None):
     context = context.copy() if context else {}
-    context.update({
-        'SITE_ADDRESS': settings.MISAGO_ADDRESS,
-        'SITE_HOST': get_host_from_address(settings.MISAGO_ADDRESS),
-        'LANGUAGE_CODE': get_language()[:2],
-        'LOGIN_URL': settings.LOGIN_URL,
+    context.update(
+        {
+            "SITE_ADDRESS": settings.MISAGO_ADDRESS,
+            "SITE_HOST": get_host_from_address(settings.MISAGO_ADDRESS),
+            "LANGUAGE_CODE": get_language()[:2],
+            "LOGIN_URL": settings.LOGIN_URL,
+            "user": recipient,
+            "sender": sender,
+            "subject": subject,
+        }
+    )
 
-        'misago_settings': db_settings,
+    if not context.get("settings"):
+        raise ValueError("settings key is missing from context")
 
-        'user': recipient,
-        'sender': sender,
-        'subject': subject,
-    })
+    message_plain = render_to_string("%s.txt" % template, context)
+    message_html = render_to_string("%s.html" % template, context)
 
-    message_plain = render_to_string('%s.txt' % template, context)
-    message_html = render_to_string('%s.html' % template, context)
-
-    message = djmail.EmailMultiAlternatives(subject, message_plain, to=[recipient.email])
+    message = djmail.EmailMultiAlternatives(
+        subject, message_plain, to=[recipient.email]
+    )
     message.attach_alternative(message_html, "text/html")
 
     return message

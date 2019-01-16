@@ -1,7 +1,6 @@
-from misago.conf import settings
+from ..conf import settings
 
-
-MOMENT_STATIC_PATH = 'misago/momentjs/%s.js'
+MOMENT_STATIC_PATH = "misago/momentjs/%s.js"
 
 
 def get_locale_url(language):
@@ -9,19 +8,17 @@ def get_locale_url(language):
     if clean_language:
         return MOMENT_STATIC_PATH % clean_language
 
-    return None
-
 
 def clean_language_name(language):
     # lowercase language
-    language = language.lower().replace('_', '-')
+    language = language.lower().replace("_", "-")
 
     # first try: literal match
     if language in settings.MISAGO_MOMENT_JS_LOCALES:
         return language
 
     # second try: fallback to macrolanguage
-    language = language.split('-')[0]
+    language = language.split("-")[0]
     if language in settings.MISAGO_MOMENT_JS_LOCALES:
         return language
 

@@ -1,11 +1,10 @@
 import os
 import random
 
+PHRASES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phrases.txt")
 
-PHRASES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'phrases.txt')
 
-
-class EnglishCorpus(object):
+class EnglishCorpus:
     def __init__(self, phrases_file=PHRASES_FILE, min_length=None, max_length=None):
         self._countdown = 0
         self._previous = None
@@ -47,7 +46,7 @@ class EnglishCorpus(object):
         max_no = len(self) - no - 1
         start = random.randint(0, max_no)
 
-        sentences = self.phrases[start:(start + no)]
+        sentences = self.phrases[start : (start + no)]
         random.shuffle(sentences)
 
         return sentences

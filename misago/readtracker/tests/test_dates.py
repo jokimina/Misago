@@ -3,25 +3,27 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from misago.conf import settings
-from misago.readtracker.dates import get_cutoff_date, is_date_tracked
+from ...conf import settings
+from ..dates import get_cutoff_date, is_date_tracked
 
 
-class MockUser(object):
+class MockUser:
     is_authenticated = True
 
     def __init__(self):
         self.joined_on = timezone.now()
 
 
-class MockAnonymousUser(object):
+class MockAnonymousUser:
     is_authenticated = False
 
 
 class ReadTrackerDatesTests(TestCase):
     def test_get_cutoff_date_no_user(self):
         """get_cutoff_date utility works without user argument"""
-        valid_cutoff_date = timezone.now() - timedelta(days=settings.MISAGO_READTRACKER_CUTOFF)
+        valid_cutoff_date = timezone.now() - timedelta(
+            days=settings.MISAGO_READTRACKER_CUTOFF
+        )
         returned_cutoff_date = get_cutoff_date()
 
         self.assertTrue(returned_cutoff_date > valid_cutoff_date)
@@ -30,17 +32,21 @@ class ReadTrackerDatesTests(TestCase):
         """get_cutoff_date utility works with user argument"""
         user = MockUser()
 
-        valid_cutoff_date = timezone.now() - timedelta(days=settings.MISAGO_READTRACKER_CUTOFF)
+        valid_cutoff_date = timezone.now() - timedelta(
+            days=settings.MISAGO_READTRACKER_CUTOFF
+        )
         returned_cutoff_date = get_cutoff_date(user)
 
         self.assertTrue(returned_cutoff_date > valid_cutoff_date)
         self.assertEqual(returned_cutoff_date, user.joined_on)
 
-    def test_get_cutoff_date_user(self):
+    def test_get_cutoff_date_anonymous_user(self):
         """passing anonymous user to get_cutoff_date has no effect"""
         user = MockAnonymousUser()
 
-        valid_cutoff_date = timezone.now() - timedelta(days=settings.MISAGO_READTRACKER_CUTOFF)
+        valid_cutoff_date = timezone.now() - timedelta(
+            days=settings.MISAGO_READTRACKER_CUTOFF
+        )
         returned_cutoff_date = get_cutoff_date(user)
 
         self.assertTrue(returned_cutoff_date > valid_cutoff_date)

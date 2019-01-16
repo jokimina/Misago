@@ -5,17 +5,17 @@ from django.http import QueryDict
 from django.utils import timezone
 from django.utils.module_loading import import_string
 
-from misago.conf import settings
+from ....conf import settings
 
 
 class PostingInterrupt(Exception):
-    def __init__(self, message):
+    def __init__(self, message):  # pylint: disable=super-init-not-called
         if not message:
             raise ValueError("You have to provide PostingInterrupt message.")
         self.message = message
 
 
-class PostingEndpoint(object):
+class PostingEndpoint:
     START = 0
     REPLY = 1
     EDIT = 2
@@ -26,7 +26,15 @@ class PostingEndpoint(object):
 
         # build kwargs dict for passing to middlewares
         self.kwargs = kwargs
-        self.kwargs.update({'mode': mode, 'request': request, 'user': request.user})
+        self.kwargs.update(
+            {
+                "mode": mode,
+                "request": request,
+                "settings": request.settings,
+                "user": request.user,
+                "user_acl": request.user_acl,
+            }
+        )
 
         self.__dict__.update(kwargs)
 
@@ -55,10 +63,7 @@ class PostingEndpoint(object):
 
     def _load_middlewares(self):
         kwargs = self.kwargs.copy()
-        kwargs.update({
-            'datetime': self.datetime,
-            'parsing_result': {},
-        })
+        kwargs.update({"datetime": self.datetime, "parsing_result": {}})
 
         middlewares = []
         for middleware in settings.MISAGO_POSTING_MIDDLEWARES:
@@ -69,7 +74,9 @@ class PostingEndpoint(object):
                 if middleware_obj.use_this_middleware():
                     middlewares.append((middleware, middleware_obj))
             except PostingInterrupt:
-                raise ValueError("Posting process can only be interrupted during pre_save phase")
+                raise ValueError(
+                    "Posting process can only be interrupted during pre_save phase"
+                )
 
         return middlewares
 
@@ -86,7 +93,9 @@ class PostingEndpoint(object):
                     serializers[middleware] = serializer
             return serializers
         except PostingInterrupt:
-            raise ValueError("Posting process can only be interrupted during pre_save phase")
+            raise ValueError(
+                "Posting process can only be interrupted during pre_save phase"
+            )
 
     def is_valid(self):
         """validate data against all serializers"""
@@ -109,7 +118,8 @@ class PostingEndpoint(object):
                 obj.pre_save(self._serializers.get(middleware))
         except PostingInterrupt as e:
             raise ValueError(
-                "Posting process can only be interrupted from within interrupt_posting method"
+                "Posting process can only be interrupted "
+                "from within interrupt_posting method"
             )
 
         try:
@@ -125,11 +135,12 @@ class PostingEndpoint(object):
                 obj.post_save(self._serializers.get(middleware))
         except PostingInterrupt as e:
             raise ValueError(
-                "Posting process can only be interrupted from within interrupt_posting method"
+                "Posting process can only be interrupted "
+                "from within interrupt_posting method"
             )
 
 
-class PostingMiddleware(object):
+class PostingMiddleware:
     """abstract middleware class"""
 
     def __init__(self, **kwargs):

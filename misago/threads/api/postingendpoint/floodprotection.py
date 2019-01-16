@@ -3,18 +3,18 @@ from datetime import timedelta
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from misago.conf import settings
-
 from . import PostingEndpoint, PostingInterrupt, PostingMiddleware
-
+from ....conf import settings
 
 MIN_POSTING_PAUSE = 3
 
 
 class FloodProtectionMiddleware(PostingMiddleware):
     def use_this_middleware(self):
-        return not self.user.acl_cache['can_omit_flood_protection'
-                                       ] and self.mode != PostingEndpoint.EDIT
+        return (
+            not self.user_acl["can_omit_flood_protection"]
+            and self.mode != PostingEndpoint.EDIT
+        )
 
     def interrupt_posting(self, serializer):
         now = timezone.now()
@@ -22,10 +22,12 @@ class FloodProtectionMiddleware(PostingMiddleware):
         if self.user.last_posted_on:
             previous_post = now - self.user.last_posted_on
             if previous_post.total_seconds() < MIN_POSTING_PAUSE:
-                raise PostingInterrupt(_("You can't post message so quickly after previous one."))
+                raise PostingInterrupt(
+                    _("You can't post message so quickly after previous one.")
+                )
 
         self.user.last_posted_on = timezone.now()
-        self.user.update_fields.append('last_posted_on')
+        self.user.update_fields.append("last_posted_on")
 
         if settings.MISAGO_HOURLY_POST_LIMIT:
             cutoff = now - timedelta(hours=24)

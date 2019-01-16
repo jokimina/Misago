@@ -1,42 +1,22 @@
-from django.contrib.auth import get_user_model
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.urls import reverse
 
-from misago.acl.testutils import override_acl
-from misago.categories.models import Category
-from misago.markup.mentions import MENTIONS_LIMIT
-from misago.threads import testutils
-from misago.users.testutils import AuthenticatedUserTestCase
-
-
-UserModel = get_user_model()
+from .. import test
+from ...categories.models import Category
+from ...markup.mentions import MENTIONS_LIMIT
+from ...users.test import AuthenticatedUserTestCase, create_test_user
 
 
 class PostMentionsTests(AuthenticatedUserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.category = Category.objects.get(slug='first-category')
-        self.thread = testutils.post_thread(category=self.category)
-        self.override_acl()
+        self.category = Category.objects.get(slug="first-category")
+        self.thread = test.post_thread(category=self.category)
 
         self.post_link = reverse(
-            'misago:api:thread-post-list', kwargs={
-                'thread_pk': self.thread.pk,
-            }
+            "misago:api:thread-post-list", kwargs={"thread_pk": self.thread.pk}
         )
-
-    def override_acl(self):
-        new_acl = self.user.acl_cache
-        new_acl['categories'][self.category.pk].update({
-            'can_see': 1,
-            'can_browse': 1,
-            'can_start_threads': 1,
-            'can_reply_threads': 1,
-            'can_edit_posts': 1,
-        })
-
-        override_acl(self.user, new_acl)
 
     def put(self, url, data=None):
         content = encode_multipart(BOUNDARY, data or {})
@@ -45,37 +25,31 @@ class PostMentionsTests(AuthenticatedUserTestCase):
     def test_mention_noone(self):
         """endpoint handles no mentions in post"""
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response!",
-            }
+            self.post_link, data={"post": "This is test response!"}
         )
         self.assertEqual(response.status_code, 200)
 
-        post = self.user.post_set.order_by('id').last()
+        post = self.user.post_set.order_by("id").last()
         self.assertEqual(post.mentions.count(), 0)
 
     def test_mention_nonexistant(self):
         """endpoint handles nonexistant mention"""
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response, @InvalidUser!",
-            }
+            self.post_link, data={"post": "This is test response, @InvalidUser!"}
         )
         self.assertEqual(response.status_code, 200)
 
-        post = self.user.post_set.order_by('id').last()
+        post = self.user.post_set.order_by("id").last()
         self.assertEqual(post.mentions.count(), 0)
 
     def test_mention_self(self):
         """endpoint mentions author"""
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response, @%s!" % self.user,
-            }
+            self.post_link, data={"post": "This is test response, @%s!" % self.user}
         )
         self.assertEqual(response.status_code, 200)
 
-        post = self.user.post_set.order_by('id').last()
+        post = self.user.post_set.order_by("id").last()
 
         self.assertEqual(post.mentions.count(), 1)
         self.assertEqual(post.mentions.all()[0], self.user)
@@ -85,102 +59,80 @@ class PostMentionsTests(AuthenticatedUserTestCase):
         users = []
 
         for i in range(MENTIONS_LIMIT + 5):
-            users.append(
-                UserModel.objects.
-                create_user('Mention%s' % i, 'mention%s@bob.com' % i, 'pass123')
-            )
+            users.append(create_test_user("User%s" % i, "user%s@example.com" % i))
 
-        mentions = ['@%s' % u for u in users]
+        mentions = ["@%s" % u for u in users]
         response = self.client.post(
             self.post_link,
-            data={
-                'post': "This is test response, %s!" % (', '.join(mentions)),
-            }
+            data={"post": "This is test response, %s!" % (", ".join(mentions))},
         )
         self.assertEqual(response.status_code, 200)
 
-        post = self.user.post_set.order_by('id').last()
+        post = self.user.post_set.order_by("id").last()
 
         self.assertEqual(post.mentions.count(), 24)
-        self.assertEqual(list(post.mentions.order_by('id')), users[:24])
+        self.assertEqual(list(post.mentions.order_by("id")), users[:24])
 
     def test_mention_update(self):
         """edit post endpoint updates mentions"""
-        user_a = UserModel.objects.create_user('Mention', 'mention@test.com', 'pass123')
-        user_b = UserModel.objects.create_user('MentionB', 'mentionb@test.com', 'pass123')
+        user = create_test_user("User", "user@example.com")
+        other_user = create_test_user("OtherUser", "otheruser@example.com")
 
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response, @%s!" % user_a,
-            }
+            self.post_link, data={"post": "This is test response, @%s!" % user}
         )
         self.assertEqual(response.status_code, 200)
 
-        post = self.user.post_set.order_by('id').last()
+        post = self.user.post_set.order_by("id").last()
 
         self.assertEqual(post.mentions.count(), 1)
-        self.assertEqual(post.mentions.order_by('id')[0], user_a)
+        self.assertEqual(post.mentions.order_by("id")[0], user)
 
         # add mention to post
         edit_link = reverse(
-            'misago:api:thread-post-detail', kwargs={
-                'thread_pk': self.thread.pk,
-                'pk': post.pk,
-            }
+            "misago:api:thread-post-detail",
+            kwargs={"thread_pk": self.thread.pk, "pk": post.pk},
         )
 
-        self.override_acl()
         response = self.put(
             edit_link,
-            data={
-                'post': "This is test response, @%s and @%s!" % (user_a, user_b),
-            }
+            data={"post": "This is test response, @%s and @%s!" % (user, other_user)},
         )
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(post.mentions.count(), 2)
-        self.assertEqual(list(post.mentions.order_by('id')), [user_a, user_b])
+        self.assertEqual(list(post.mentions.order_by("id")), [user, other_user])
 
         # remove first mention from post - should preserve mentions
-        self.override_acl()
         response = self.put(
-            edit_link, data={
-                'post': "This is test response, @%s!" % user_b,
-            }
+            edit_link, data={"post": "This is test response, @%s!" % other_user}
         )
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(post.mentions.count(), 2)
-        self.assertEqual(list(post.mentions.order_by('id')), [user_a, user_b])
+        self.assertEqual(list(post.mentions.order_by("id")), [user, other_user])
 
         # remove mentions from post - should preserve mentions
-        self.override_acl()
-        response = self.put(
-            edit_link, data={
-                'post': "This is test response!",
-            }
-        )
+        response = self.put(edit_link, data={"post": "This is test response!"})
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(post.mentions.count(), 2)
-        self.assertEqual(list(post.mentions.order_by('id')), [user_a, user_b])
+        self.assertEqual(list(post.mentions.order_by("id")), [user, other_user])
 
     def test_mentions_merge(self):
         """posts merge sums mentions"""
-        user_a = UserModel.objects.create_user('Mention', 'mention@test.com', 'pass123')
-        user_b = UserModel.objects.create_user('MentionB', 'mentionb@test.com', 'pass123')
+        user = create_test_user("User1", "user1@example.com")
+        other_user = create_test_user("User2", "user2@example.com")
 
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response, @%s!" % user_a,
-            }
+            self.post_link, data={"post": "This is test response, @%s!" % user}
         )
         self.assertEqual(response.status_code, 200)
 
-        post_a = self.user.post_set.order_by('id').last()
+        post_a = self.user.post_set.order_by("id").last()
 
         self.assertEqual(post_a.mentions.count(), 1)
-        self.assertEqual(list(post_a.mentions.all()), [user_a])
+        self.assertEqual(list(post_a.mentions.all()), [user])
 
         # post second reply
         self.user.last_post_on = None
@@ -188,16 +140,14 @@ class PostMentionsTests(AuthenticatedUserTestCase):
 
         response = self.client.post(
             self.post_link,
-            data={
-                'post': "This is test response, @%s and @%s!" % (user_a, user_b),
-            }
+            data={"post": "This is test response, @%s and @%s!" % (user, other_user)},
         )
         self.assertEqual(response.status_code, 200)
 
-        post_b = self.user.post_set.order_by('id').last()
+        post_b = self.user.post_set.order_by("id").last()
 
         # merge posts and validate that post A has all mentions
         post_b.merge(post_a)
 
         self.assertEqual(post_a.mentions.count(), 2)
-        self.assertEqual(list(post_a.mentions.order_by('id')), [user_a, user_b])
+        self.assertEqual(list(post_a.mentions.order_by("id")), [user, other_user])

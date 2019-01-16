@@ -1,53 +1,38 @@
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from misago.categories.models import Category
-from misago.core import threadstore
-from misago.core.cache import cache
-from misago.threads.testutils import post_thread
-from misago.users.activepostersranking import (
-    build_active_posters_ranking, get_active_posters_ranking)
-from misago.users.testutils import AuthenticatedUserTestCase
-
-
-UserModel = get_user_model()
+from ...categories.models import Category
+from ...threads.test import post_thread
+from ..activepostersranking import (
+    build_active_posters_ranking,
+    get_active_posters_ranking,
+)
+from ..test import AuthenticatedUserTestCase, create_test_user
 
 
 class TestActivePostersRanking(AuthenticatedUserTestCase):
     def setUp(self):
         super().setUp()
 
-        cache.clear()
-        threadstore.clear()
-
-        self.category = Category.objects.get(slug='first-category')
-
-    def tearDown(self):
-        super().tearDown()
-
-        cache.clear()
-        threadstore.clear()
+        self.category = Category.objects.get(slug="first-category")
 
     def test_get_active_posters_ranking(self):
         """get_active_posters_ranking returns list of active posters"""
         # no posts, empty tanking
         empty_ranking = get_active_posters_ranking()
 
-        self.assertEqual(empty_ranking['users'], [])
-        self.assertEqual(empty_ranking['users_count'], 0)
+        self.assertEqual(empty_ranking["users"], [])
+        self.assertEqual(empty_ranking["users_count"], 0)
 
         # other user that will be posting
-        other_user = UserModel.objects.create_user("OtherUser", "other@user.com", "pass123")
+        other_user = create_test_user("OtherUser", "otheruser@example.com")
 
         # lurker user that won't post anything
-        UserModel.objects.create_user("Lurker", "lurker@user.com", "pass123")
+        create_test_user("Lurker", "lurker@example.com")
 
         # unranked user that posted something 400 days ago
-        unranked_user = UserModel.objects.create_user(
-            "UnrankedUser", "unranked@user.com", "pass123"
-        )
+        unranked_user = create_test_user("UnrankedUser", "unranked@example.com")
 
         started_on = timezone.now() - timedelta(days=400)
         post_thread(self.category, poster=unranked_user, started_on=started_on)
@@ -58,8 +43,8 @@ class TestActivePostersRanking(AuthenticatedUserTestCase):
         build_active_posters_ranking()
         ranking = get_active_posters_ranking()
 
-        self.assertEqual(ranking['users'], [other_user])
-        self.assertEqual(ranking['users_count'], 1)
+        self.assertEqual(ranking["users"], [other_user])
+        self.assertEqual(ranking["users_count"], 1)
 
         # two users in ranking
         post_thread(self.category, poster=self.user)
@@ -68,14 +53,14 @@ class TestActivePostersRanking(AuthenticatedUserTestCase):
         build_active_posters_ranking()
         ranking = get_active_posters_ranking()
 
-        self.assertEqual(ranking['users'], [self.user, other_user])
-        self.assertEqual(ranking['users_count'], 2)
+        self.assertEqual(ranking["users"], [self.user, other_user])
+        self.assertEqual(ranking["users_count"], 2)
 
-        self.assertEqual(ranking['users'][0].score, 2)
-        self.assertEqual(ranking['users'][1].score, 1)
+        self.assertEqual(ranking["users"][0].score, 2)
+        self.assertEqual(ranking["users"][1].score, 1)
 
         # disabled users are not ranked
-        disabled = UserModel.objects.create_user("DisabledUser", "disabled@user.com", "pass123")
+        disabled = create_test_user("DisabledUser", "disableduser@example.com")
 
         disabled.is_active = False
         disabled.save()
@@ -90,8 +75,8 @@ class TestActivePostersRanking(AuthenticatedUserTestCase):
         build_active_posters_ranking()
         ranking = get_active_posters_ranking()
 
-        self.assertEqual(ranking['users'], [self.user, other_user])
-        self.assertEqual(ranking['users_count'], 2)
+        self.assertEqual(ranking["users"], [self.user, other_user])
+        self.assertEqual(ranking["users_count"], 2)
 
-        self.assertEqual(ranking['users'][0].score, 2)
-        self.assertEqual(ranking['users'][1].score, 1)
+        self.assertEqual(ranking["users"][0].score, 2)
+        self.assertEqual(ranking["users"][1].score, 1)

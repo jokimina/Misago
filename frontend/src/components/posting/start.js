@@ -17,8 +17,8 @@ import modal from 'misago/services/modal'; // jshint ignore:line
 const QRCode = require('qrcode.react'); // jshint ignore:line
 
 export default class extends Form {
-    constructor(props) {
-        super(props);
+  constructor(props) {
+    super(props)
 
         this.state = {
             isReady: false,
@@ -47,34 +47,36 @@ export default class extends Form {
         };
     }
 
-    componentDidMount() {
-        ajax.get(this.props.config).then(this.loadSuccess, this.loadError);
-    }
+  componentDidMount() {
+    ajax.get(this.props.config).then(this.loadSuccess, this.loadError)
+  }
 
-    /* jshint ignore:start */
-    loadSuccess = (data) => {
-        let category = null;
-        let showOptions = false;
-        let categoryOptions = null;
+  loadSuccess = data => {
+    let category = null
+    let showOptions = false
+    let categoryOptions = null
 
-        // hydrate categories, extract posting options
-        const categories = data.map((item) => {
-            // pick first category that allows posting and if it may, override it with initial one
-            if (item.post !== false && (!category || item.id == this.state.category)) {
-                category = item.id;
-                categoryOptions = item.post;
-            }
+    // hydrate categories, extract posting options
+    const categories = data.map(item => {
+      // pick first category that allows posting and if it may, override it with initial one
+      if (
+        item.post !== false &&
+        (!category || item.id == this.state.category)
+      ) {
+        category = item.id
+        categoryOptions = item.post
+      }
 
-            if (item.post && (item.post.close || item.post.hide || item.post.pin)) {
-                showOptions = true;
-            }
+      if (item.post && (item.post.close || item.post.hide || item.post.pin)) {
+        showOptions = true;
+      }
 
-            return Object.assign(item, {
-                disabled: item.post === false,
-                label: item.name,
-                value: item.id
-            });
-        });
+      return Object.assign(item, {
+        disabled: item.post === false,
+        label: item.name,
+        value: item.id
+      });
+    });
 
         this.setState({
             isReady: true,
@@ -86,18 +88,18 @@ export default class extends Form {
         });
     };
 
-    loadError = (rejection) => {
+    loadError = rejection => {
         this.setState({
             isErrored: rejection.detail
-        });
-    };
+        })
+    }
 
     onCancel = () => {
-        const cancel = confirm(gettext("Are you sure you want to discard thread?"));
+        const cancel = confirm(gettext("Are you sure you want to discard thread?"))
         if (cancel) {
-            posting.close();
+            posting.close()
         }
-    };
+    }
 
     queryPayStatus = () => {
         ajax.get(misago.get('PAY_WECHATPAY_STATUS_API'), {'out_trade_no': this.state.outTradeNo}).then(
@@ -127,28 +129,28 @@ export default class extends Form {
 
     };
 
-    onTitleChange = (event) => {
-        this.changeValue('title', event.target.value);
-    };
+    onTitleChange = event => {
+        this.changeValue("title", event.target.value)
+    }
 
-    onCategoryChange = (event) => {
-        const category = this.state.categories.find((item) => {
-            return event.target.value == item.value;
-        });
+  onCategoryChange = (event) => {
+    const category = this.state.categories.find((item) => {
+      return event.target.value == item.value;
+    });
 
-        // if selected pin is greater than allowed, reduce it
-        let pin = this.state.pin;
-        if (category.post.pin && category.post.pin < pin) {
-            pin = category.post.pin;
-        }
+    // if selected pin is greater than allowed, reduce it
+    let pin = this.state.pin;
+    if (category.post.pin && category.post.pin < pin) {
+      pin = category.post.pin;
+    }
 
         this.setState({
             category: category.id,
             categoryOptions: category.post,
 
-            pin
-        });
-    };
+      pin
+    });
+  };
 
     onRewardChange = (event) => {
         const reward = this.state.rewards.find((item) => {
@@ -162,66 +164,66 @@ export default class extends Form {
         this.changeValue('post', event.target.value);
     };
 
-    onAttachmentsChange = (attachments) => {
-        this.setState({
-            attachments
-        });
-    };
+  onAttachmentsChange = (attachments) => {
+    this.setState({
+      attachments
+    });
+  };
 
-    onClose = () => {
-        this.changeValue('close', true);
-    };
+  onClose = () => {
+    this.changeValue('close', true);
+  };
 
-    onOpen = () => {
-        this.changeValue('close', false);
-    };
+  onOpen = () => {
+    this.changeValue('close', false);
+  };
 
-    onPinGlobally = () => {
-        this.changeValue('pin', 2);
-    };
+  onPinGlobally = () => {
+    this.changeValue('pin', 2);
+  };
 
-    onPinLocally = () => {
-        this.changeValue('pin', 1);
-    };
+  onPinLocally = () => {
+    this.changeValue('pin', 1);
+  };
 
-    onUnpin = () => {
-        this.changeValue('pin', 0);
-    };
+  onUnpin = () => {
+    this.changeValue('pin', 0);
+  };
 
-    onHide = () => {
-        this.changeValue('hide', true);
-    };
+  onHide = () => {
+    this.changeValue('hide', true);
+  };
 
-    onUnhide = () => {
-        this.changeValue('hide', false);
-    };
-    /* jshint ignore:end */
+  onUnhide = () => {
+    this.changeValue('hide', false);
+  };
+  /* jshint ignore:end */
 
-    clean() {
-        if (!this.state.title.trim().length) {
-            snackbar.error(gettext("You have to enter thread title."));
-            return false;
-        }
-
-        if (!this.state.post.trim().length) {
-            snackbar.error(gettext("You have to enter a message."));
-            return false;
-        }
-
-        const errors = this.validate();
-
-        if (errors.title) {
-            snackbar.error(errors.title[0]);
-            return false;
-        }
-
-        if (errors.post) {
-            snackbar.error(errors.post[0]);
-            return false;
-        }
-
-        return true;
+  clean() {
+    if (!this.state.title.trim().length) {
+      snackbar.error(gettext("You have to enter thread title."));
+      return false;
     }
+
+    if (!this.state.post.trim().length) {
+      snackbar.error(gettext("You have to enter a message."));
+      return false;
+    }
+
+    const errors = this.validate();
+
+    if (errors.title) {
+      snackbar.error(errors.title[0]);
+      return false;
+    }
+
+    if (errors.post) {
+      snackbar.error(errors.post[0]);
+      return false;
+    }
+
+    return true;
+  }
 
     send() {
         return ajax.post(this.props.submit, {
@@ -236,66 +238,63 @@ export default class extends Form {
         });
     }
 
-    handleSuccess(success) {
-        snackbar.success(gettext("Your thread has been posted."));
-        window.location = success.url;
+  handleSuccess(success) {
+    snackbar.success(gettext("Your thread has been posted."));
+    window.location = success.url;
 
-        // keep form loading
-        this.setState({
-            'isLoading': true
-        });
+    // keep form loading
+    this.setState({
+      'isLoading': true
+    });
+  }
+
+  handleError(rejection) {
+    if (rejection.status === 400) {
+      const errors = [].concat(
+        rejection.non_field_errors || [],
+        rejection.category || [],
+        rejection.title || [],
+        rejection.post || [],
+        rejection.attachments || []
+      );
+
+      snackbar.error(errors[0]);
+    } else {
+      snackbar.apiError(rejection);
+    }
+  }
+
+  render() {
+    if (this.state.isErrored) {
+      return <Message message={this.state.isErrored} />
     }
 
-    handleError(rejection) {
-        if (rejection.status === 400) {
-            const errors = [].concat(
-                rejection.non_field_errors || [],
-                rejection.category || [],
-                rejection.title || [],
-                rejection.post || [],
-                rejection.attachments || []
-            );
-
-            snackbar.error(errors[0]);
-        } else {
-            snackbar.apiError(rejection);
-        }
+    if (!this.state.isReady) {
+      return (
+        <Loader />
+      );
     }
 
-    render() {
-        /* jshint ignore:start */
-        if (this.state.isErrored) {
-            return (
-                <Message message={this.state.isErrored}/>
-            );
-        }
+    let columns = 0;
+    if (this.state.categoryOptions.close) columns += 1;
+    if (this.state.categoryOptions.hide) columns += 1;
+    if (this.state.categoryOptions.pin) columns += 1;
 
-        if (!this.state.isReady) {
-            return (
-                <Loader/>
-            );
-        }
+    let titleStyle = null;
 
-        let columns = 0;
-        if (this.state.categoryOptions.close) columns += 1;
-        if (this.state.categoryOptions.hide) columns += 1;
-        if (this.state.categoryOptions.pin) columns += 1;
+    if (columns === 1) {
+      titleStyle = 'col-sm-6';
+    } else {
+      titleStyle = 'col-sm-8';
+    }
 
-        let titleStyle = null;
-
-        if (columns === 1) {
-            titleStyle = 'col-sm-6';
-        } else {
-            titleStyle = 'col-sm-8';
-        }
-
-        if (columns === 3) {
-            titleStyle += ' col-md-6'
-        } else if (columns) {
-            titleStyle += ' col-md-7'
-        } else {
-            titleStyle += ' col-md-9'
-        }
+    if (columns === 3) {
+      titleStyle += ' col-md-6'
+    } else if (columns) {
+      titleStyle += ' col-md-7'
+    } else {
+      titleStyle += ' col-md-9'
+    }
 
         return (
             <Container className="posting-form" withFirstRow={true}>

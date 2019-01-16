@@ -1,22 +1,29 @@
-from rest_framework import viewsets
-from rest_framework.decorators import detail_route
-from rest_framework.response import Response
-
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404
 from django.utils.translation import gettext as _
+from rest_framework import viewsets
+from rest_framework.decorators import detail_route
+from rest_framework.response import Response
 
-from misago.acl import add_acl
-from misago.core.shortcuts import get_int_or_404
-from misago.threads.models import Poll
-from misago.threads.permissions import (
-    allow_delete_poll, allow_edit_poll, allow_see_poll_votes, allow_start_poll, can_start_poll)
-from misago.threads.serializers import (
-    EditPollSerializer, NewPollSerializer, PollSerializer, PollVoteSerializer)
-from misago.threads.viewmodels import ForumThread
-from misago.users.audittrail import create_audit_trail
-
+from ...acl.objectacl import add_acl_to_obj
+from ...core.shortcuts import get_int_or_404
+from ...users.audittrail import create_audit_trail
+from ..models import Poll
+from ..permissions import (
+    allow_delete_poll,
+    allow_edit_poll,
+    allow_see_poll_votes,
+    allow_start_poll,
+    can_start_poll,
+)
+from ..serializers import (
+    EditPollSerializer,
+    NewPollSerializer,
+    PollSerializer,
+    PollVoteSerializer,
+)
+from ..viewmodels import ForumThread
 from .pollvotecreateendpoint import poll_vote_create
 
 
@@ -24,9 +31,8 @@ class ViewSet(viewsets.ViewSet):
     thread = None
 
     def get_thread(self, request, thread_pk):
-        return self.thread(
-            request,
-            get_int_or_404(thread_pk),
+        return self.thread(  # pylint: disable=not-callable
+            request, get_int_or_404(thread_pk)
         ).unwrap()
 
     def get_poll(self, thread, pk):
@@ -47,7 +53,7 @@ class ViewSet(viewsets.ViewSet):
     @transaction.atomic
     def create(self, request, thread_pk):
         thread = self.get_thread(request, thread_pk)
-        allow_start_poll(request.user, thread)
+        allow_start_poll(request.user_acl, thread)
 
         try:
             if thread.poll and thread.poll.pk:
@@ -68,9 +74,9 @@ class ViewSet(viewsets.ViewSet):
 
         serializer.save()
 
-        add_acl(request.user, instance)
+        add_acl_to_obj(request.user_acl, instance)
         for choice in instance.choices:
-            choice['selected'] = False
+            choice["selected"] = False
 
         thread.has_poll = True
         thread.save()
@@ -84,14 +90,14 @@ class ViewSet(viewsets.ViewSet):
         thread = self.get_thread(request, thread_pk)
         instance = self.get_poll(thread, pk)
 
-        allow_edit_poll(request.user, instance)
+        allow_edit_poll(request.user_acl, instance)
 
         serializer = EditPollSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
 
         serializer.save()
 
-        add_acl(request.user, instance)
+        add_acl_to_obj(request.user_acl, instance)
         instance.make_choices_votes_aware(request.user)
 
         create_audit_trail(request, instance)
@@ -103,23 +109,20 @@ class ViewSet(viewsets.ViewSet):
         thread = self.get_thread(request, thread_pk)
         instance = self.get_poll(thread, pk)
 
-        allow_delete_poll(request.user, instance)
+        allow_delete_poll(request.user_acl, instance)
 
         thread.poll.delete()
 
         thread.has_poll = False
         thread.save()
 
-        return Response({
-            'can_start_poll': can_start_poll(request.user, thread),
-        })
+        return Response({"can_start_poll": can_start_poll(request.user_acl, thread)})
 
-    @detail_route(methods=['get', 'post'])
+    @detail_route(methods=["get", "post"])
     def votes(self, request, thread_pk, pk=None):
-        if request.method == 'POST':
+        if request.method == "POST":
             return self.post_votes(request, thread_pk, pk)
-        else:
-            return self.get_votes(request, thread_pk, pk)
+        return self.get_votes(request, thread_pk, pk)
 
     @transaction.atomic
     def post_votes(self, request, thread_pk, pk=None):
@@ -138,23 +141,23 @@ class ViewSet(viewsets.ViewSet):
         except Poll.DoesNotExist:
             raise Http404()
 
-        allow_see_poll_votes(request.user, thread.poll)
+        allow_see_poll_votes(request.user_acl, thread.poll)
 
         choices = []
         voters = {}
 
         for choice in thread.poll.choices:
-            choice['voters'] = []
-            voters[choice['hash']] = choice['voters']
+            choice["voters"] = []
+            voters[choice["hash"]] = choice["voters"]
 
             choices.append(choice)
 
         queryset = thread.poll.pollvote_set.values(
-            'voter_id', 'voter_name', 'voter_slug', 'voted_on', 'choice_hash'
+            "voter_id", "voter_name", "voter_slug", "voted_on", "choice_hash"
         )
 
-        for voter in queryset.order_by('voter_name').iterator():
-            voters[voter['choice_hash']].append(PollVoteSerializer(voter).data)
+        for voter in queryset.order_by("voter_name").iterator():
+            voters[voter["choice_hash"]].append(PollVoteSerializer(voter).data)
 
         return Response(choices)
 

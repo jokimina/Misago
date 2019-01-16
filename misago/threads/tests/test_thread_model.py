@@ -1,15 +1,12 @@
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
-from misago.categories.models import Category
-from misago.threads import testutils
-from misago.threads.models import Poll, Post, Thread, ThreadParticipant
-
-
-UserModel = get_user_model()
+from .. import test
+from ...categories.models import Category
+from ...users.test import create_test_user
+from ..models import Poll, Post, Thread, ThreadParticipant
 
 
 class ThreadModelTests(TestCase):
@@ -20,11 +17,11 @@ class ThreadModelTests(TestCase):
         self.thread = Thread(
             category=self.category,
             started_on=datetime,
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=datetime,
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         self.thread.set_title("Test thread")
@@ -33,7 +30,7 @@ class ThreadModelTests(TestCase):
         Post.objects.create(
             category=self.category,
             thread=self.thread,
-            poster_name='Tester',
+            poster_name="Tester",
             original="Hello! I am test message!",
             parsed="<p>Hello! I am test message!</p>",
             checksum="nope",
@@ -46,7 +43,7 @@ class ThreadModelTests(TestCase):
 
     def test_synchronize(self):
         """synchronize method updates thread data to reflect its contents"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
 
         self.assertEqual(self.thread.replies, 0)
 
@@ -216,8 +213,8 @@ class ThreadModelTests(TestCase):
         Poll.objects.create(
             thread=self.thread,
             category=self.category,
-            poster_name='test',
-            poster_slug='test',
+            poster_name="test",
+            poster_slug="test",
             choices=[],
         )
 
@@ -226,7 +223,7 @@ class ThreadModelTests(TestCase):
 
     def test_set_first_post(self):
         """set_first_post sets first post and poster data on thread"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
 
         datetime = timezone.now() + timedelta(5)
 
@@ -251,7 +248,7 @@ class ThreadModelTests(TestCase):
 
     def test_set_last_post(self):
         """set_last_post sets first post and poster data on thread"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
 
         datetime = timezone.now() + timedelta(5)
 
@@ -276,7 +273,7 @@ class ThreadModelTests(TestCase):
 
     def test_set_best_answer(self):
         """set_best_answer sets best answer and setter data on thread"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
 
         best_answer = Post.objects.create(
             category=self.category,
@@ -318,9 +315,9 @@ class ThreadModelTests(TestCase):
 
     def test_set_invalid_best_answer(self):
         """set_best_answer implements some assertions for data integrity"""
-        user = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
 
-        other_thread = testutils.post_thread(self.category)
+        other_thread = test.post_thread(self.category)
         with self.assertRaises(ValueError):
             self.thread.set_best_answer(user, other_thread.first_post)
 
@@ -328,25 +325,20 @@ class ThreadModelTests(TestCase):
             self.thread.set_best_answer(user, self.thread.first_post)
 
         with self.assertRaises(ValueError):
-            reply = testutils.reply_thread(self.thread, is_hidden=True)
+            reply = test.reply_thread(self.thread, is_hidden=True)
             self.thread.set_best_answer(user, reply)
 
         with self.assertRaises(ValueError):
-            reply = testutils.reply_thread(self.thread, is_unapproved=True)
+            reply = test.reply_thread(self.thread, is_unapproved=True)
             self.thread.set_best_answer(user, reply)
 
     def test_move(self):
         """move(new_category) moves thread to other category"""
         root_category = Category.objects.root_category()
-        Category(
-            name='New Category',
-            slug='new-category',
-        ).insert_at(
-            root_category,
-            position='last-child',
-            save=True,
+        Category(name="New Category", slug="new-category").insert_at(
+            root_category, position="last-child", save=True
         )
-        new_category = Category.objects.get(slug='new-category')
+        new_category = Category.objects.get(slug="new-category")
 
         self.thread.move(new_category)
         self.assertEqual(self.thread.category, new_category)
@@ -364,11 +356,11 @@ class ThreadModelTests(TestCase):
         other_thread = Thread(
             category=self.category,
             started_on=datetime,
-            starter_name='Tester',
-            starter_slug='tester',
+            starter_name="Tester",
+            starter_slug="tester",
             last_post_on=datetime,
-            last_poster_name='Tester',
-            last_poster_slug='tester',
+            last_poster_name="Tester",
+            last_poster_slug="tester",
         )
 
         other_thread.set_title("Other thread")
@@ -377,7 +369,7 @@ class ThreadModelTests(TestCase):
         post = Post.objects.create(
             category=self.category,
             thread=other_thread,
-            poster_name='Admin',
+            poster_name="Admin",
             original="Hello! I am other message!",
             parsed="<p>Hello! I am other message!</p>",
             checksum="nope",
@@ -403,15 +395,15 @@ class ThreadModelTests(TestCase):
         private thread gets deleted automatically
         when there are no participants left in it
         """
-        user_a = UserModel.objects.create_user("Bob", "bob@boberson.com", "Pass.123")
-        user_b = UserModel.objects.create_user("Weebl", "weebl@weeblson.com", "Pass.123")
+        user = create_test_user("User", "user@example.com")
+        other_user = create_test_user("OtherUser", "otheruser@example.com")
 
-        ThreadParticipant.objects.add_participants(self.thread, [user_a, user_b])
+        ThreadParticipant.objects.add_participants(self.thread, [user, other_user])
         self.assertEqual(self.thread.participants.count(), 2)
 
-        user_a.delete()
+        user.delete()
         Thread.objects.get(id=self.thread.id)
 
-        user_b.delete()
+        other_user.delete()
         with self.assertRaises(Thread.DoesNotExist):
             Thread.objects.get(id=self.thread.id)

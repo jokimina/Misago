@@ -1,19 +1,16 @@
 from io import StringIO
 
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
 
-from misago.users.management.commands import listusedprofilefields
-
-
-UserModel = get_user_model()
+from ..management.commands import listusedprofilefields
+from ..test import create_test_user
 
 
 class ListUsedProfileFieldsTests(TestCase):
     def test_no_fields_set(self):
         """utility has no showstoppers when no fields are set"""
-        UserModel.objects.create_user('Bob', 'bob@bob.com', 'pass123')
+        create_test_user("User", "user@example.com")
 
         out = StringIO()
         call_command(listusedprofilefields.Command(), stdout=out)
@@ -23,24 +20,18 @@ class ListUsedProfileFieldsTests(TestCase):
 
     def test_fields_set(self):
         """utility lists number of users that have different fields set"""
-        user = UserModel.objects.create_user('Bob', 'bob@bob.com', 'pass123')
-        user.profile_fields = {'gender': 'male', 'bio': "Yup!"}
-        user.save()
-
-        user = UserModel.objects.create_user('Bob2', 'bob2@bob.com', 'pass123')
-        user.profile_fields = {'gender': 'male'}
-        user.save()
-
-        user = UserModel.objects.create_user('Bob3', 'bob3@bob.com', 'pass123')
-        user.profile_fields = {'location': ""}
-        user.save()
+        create_test_user(
+            "User1",
+            "user1@example.com",
+            profile_fields={"gender": "male", "bio": "Yup!"},
+        )
+        create_test_user(
+            "User2", "user2@example.com", profile_fields={"gender": "male"}
+        )
+        create_test_user("User3", "user3@example.com", profile_fields={"location": ""})
 
         out = StringIO()
         call_command(listusedprofilefields.Command(), stdout=out)
         command_output = [l.strip() for l in out.getvalue().strip().splitlines()]
 
-        self.assertEqual(command_output, [
-            "bio:      1",
-            "gender:   2",
-            "location: 1",
-        ])
+        self.assertEqual(command_output, ["bio:      1", "gender:   2", "location: 1"])

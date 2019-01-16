@@ -1,18 +1,17 @@
 from django.shortcuts import get_object_or_404
 
-from misago.acl import add_acl
-from misago.core.viewmodel import ViewModel as BaseViewModel
-from misago.threads.permissions import exclude_invisible_posts
+from ...acl.objectacl import add_acl_to_obj
+from ...core.viewmodel import ViewModel as BaseViewModel
+from ..permissions import exclude_invisible_posts
 
-
-__all__ = ['ThreadPost']
+__all__ = ["ThreadPost"]
 
 
 class ViewModel(BaseViewModel):
     def __init__(self, request, thread, pk):
         model = self.get_post(request, thread, pk)
 
-        add_acl(request.user, model)
+        add_acl_to_obj(request.user_acl, model)
 
         self._model = model
 
@@ -23,9 +22,7 @@ class ViewModel(BaseViewModel):
             thread_model = thread
 
         queryset = self.get_queryset(request, thread_model).select_related(
-            'poster',
-            'poster__rank',
-            'poster__ban_cache',
+            "poster", "poster__rank", "poster__ban_cache"
         )
 
         post = get_object_or_404(queryset, pk=pk)
@@ -36,7 +33,9 @@ class ViewModel(BaseViewModel):
         return post
 
     def get_queryset(self, request, thread):
-        return exclude_invisible_posts(request.user, thread.category, thread.post_set)
+        return exclude_invisible_posts(
+            request.user_acl, thread.category, thread.post_set
+        )
 
 
 class ThreadPost(ViewModel):

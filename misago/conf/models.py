@@ -14,7 +14,7 @@ class SettingsGroupsManager(models.Manager):
             groups_dict[_(group.name)] = group
 
         ordered_groups = []
-        for key in groups_dict.keys():
+        for key in groups_dict:
             ordered_groups.append(groups_dict[key])
         return ordered_groups
 
@@ -31,11 +31,12 @@ class SettingsManager(models.Manager):
     def change_setting(self, setting, dry_value=None, wet_value=None):
         if dry_value:
             return self.filter(setting=setting).update(dry_value=dry_value)
-        elif wet_value:
+
+        if wet_value:
             try:
                 setting = self.get(setting=setting)
                 setting.value = wet_value
-                setting.save(update_fields=['dry_value'])
+                setting.save(update_fields=["dry_value"])
             except Setting.DoesNotExist:
                 return 0
 
@@ -49,10 +50,10 @@ class Setting(models.Model):
     order = models.IntegerField(default=0, db_index=True)
     dry_value = models.TextField(null=True, blank=True)
     default_value = models.TextField(null=True, blank=True)
-    python_type = models.CharField(max_length=255, default='string')
+    python_type = models.CharField(max_length=255, default="string")
     is_public = models.BooleanField(default=False)
     is_lazy = models.BooleanField(default=False)
-    form_field = models.CharField(max_length=255, default='text')
+    form_field = models.CharField(max_length=255, default="text")
     field_extra = JSONField()
 
     objects = SettingsManager()

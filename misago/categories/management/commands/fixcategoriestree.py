@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
-from misago.acl import version as acl_version
-from misago.categories.models import Category
+from ....acl.cache import clear_acl_cache
+from ...models import Category
 
 
 class Command(BaseCommand):
@@ -11,7 +11,8 @@ class Command(BaseCommand):
     in the database causing MPTT's nested sets to not align correctly.
     A typical case is when injecting default data into the database from outside misago.
     """
-    help = 'Rebuilds the thread category tree'
+
+    help = "Rebuilds the thread category tree"
 
     def handle(self, *args, **options):
         root = Category.objects.root_category()
@@ -19,5 +20,5 @@ class Command(BaseCommand):
         self.stdout.write("Categories tree has been rebuild.")
 
         Category.objects.clear_cache()
-        acl_version.invalidate()
+        clear_acl_cache()
         self.stdout.write("Caches have been cleared.")

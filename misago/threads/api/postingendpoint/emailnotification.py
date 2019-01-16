@@ -1,9 +1,9 @@
 from django.utils.translation import gettext as _
 
-from misago.core.mail import build_mail, send_messages
-from misago.threads.permissions import can_see_post, can_see_thread
-
 from . import PostingEndpoint, PostingMiddleware
+from ....acl import useracl
+from ....core.mail import build_mail, send_messages
+from ...permissions import can_see_post, can_see_thread
 
 
 class EmailNotificationMiddleware(PostingMiddleware):
@@ -16,39 +16,46 @@ class EmailNotificationMiddleware(PostingMiddleware):
         return self.mode == PostingEndpoint.REPLY
 
     def post_save(self, serializer):
-        queryset = self.thread.subscription_set.filter(
-            send_email=True,
-            last_read_on__gte=self.previous_last_post_on,
-        ).exclude(user=self.user).select_related('user')
+        queryset = (
+            self.thread.subscription_set.filter(
+                send_email=True, last_read_on__gte=self.previous_last_post_on
+            )
+            .exclude(user=self.user)
+            .select_related("user")
+        )
 
         notifications = []
         for subscription in queryset.iterator():
-            if self.notify_user_of_post(subscription.user):
+            if self.subscriber_can_see_post(subscription.user):
                 notifications.append(self.build_mail(subscription.user))
 
         if notifications:
             send_messages(notifications)
 
-    def notify_user_of_post(self, subscriber):
-        see_thread = can_see_thread(subscriber, self.thread)
-        see_post = can_see_post(subscriber, self.post)
+    def subscriber_can_see_post(self, subscriber):
+        user_acl = useracl.get_user_acl(subscriber, self.request.cache_versions)
+        see_thread = can_see_thread(user_acl, self.thread)
+        see_post = can_see_post(user_acl, self.post)
         return see_thread and see_post
 
     def build_mail(self, subscriber):
         if subscriber.id == self.thread.starter_id:
             subject = _('%(user)s has replied to your thread "%(thread)s"')
         else:
-            subject = _('%(user)s has replied to thread "%(thread)s" that you are watching')
+            subject = _(
+                '%(user)s has replied to thread "%(thread)s" that you are watching'
+            )
 
-        subject_formats = {'user': self.user.username, 'thread': self.thread.title}
+        subject_formats = {"user": self.user.username, "thread": self.thread.title}
 
         return build_mail(
             subscriber,
             subject % subject_formats,
-            'misago/emails/thread/reply',
+            "misago/emails/thread/reply",
             sender=self.user,
             context={
-                'thread': self.thread,
-                'post': self.post,
+                "settings": self.request.settings,
+                "thread": self.thread,
+                "post": self.post,
             },
         )

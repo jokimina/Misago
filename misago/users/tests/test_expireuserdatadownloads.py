@@ -5,14 +5,13 @@ from io import StringIO
 from django.core.files import File
 from django.core.management import call_command
 
-from misago.users.datadownloads import request_user_data_download
-from misago.users.management.commands import expireuserdatadownloads
-from misago.users.models import DataDownload
-from misago.users.testutils import AuthenticatedUserTestCase
+from ..datadownloads import request_user_data_download
+from ..management.commands import expireuserdatadownloads
+from ..models import DataDownload
+from ..test import AuthenticatedUserTestCase
 
-
-TESTFILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testfiles')
-TEST_FILE_PATH = os.path.join(TESTFILES_DIR, 'avatar.png')
+TESTFILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testfiles")
+TEST_FILE_PATH = os.path.join(TESTFILES_DIR, "avatar.png")
 
 
 class ExpireUserDataDownloadsTests(AuthenticatedUserTestCase):
@@ -20,7 +19,7 @@ class ExpireUserDataDownloadsTests(AuthenticatedUserTestCase):
         """management command deletes expired data download"""
         data_download = request_user_data_download(self.user)
         data_download.status = DataDownload.STATUS_READY
-        with open(TEST_FILE_PATH, 'rb') as download_file:
+        with open(TEST_FILE_PATH, "rb") as download_file:
             data_download.file = File(download_file)
             data_download.save()
 
@@ -39,7 +38,7 @@ class ExpireUserDataDownloadsTests(AuthenticatedUserTestCase):
         data_download = request_user_data_download(self.user)
         data_download.status = DataDownload.STATUS_READY
         data_download.expires_on += timedelta(hours=1)
-        with open(TEST_FILE_PATH, 'rb') as download_file:
+        with open(TEST_FILE_PATH, "rb") as download_file:
             data_download.file = File(download_file)
             data_download.save()
 
@@ -52,7 +51,7 @@ class ExpireUserDataDownloadsTests(AuthenticatedUserTestCase):
         updated_data_download = DataDownload.objects.get(pk=data_download.pk)
         self.assertEqual(updated_data_download.status, DataDownload.STATUS_READY)
         self.assertTrue(updated_data_download.file)
-    
+
     def test_skip_pending_data_download(self):
         """management command skips pending data downloads"""
         data_download = request_user_data_download(self.user)

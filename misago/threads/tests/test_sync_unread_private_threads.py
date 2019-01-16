@@ -1,23 +1,15 @@
-from django.contrib.auth import get_user_model
-
-from misago.threads import testutils
-from misago.threads.models import ThreadParticipant
-
+from .. import test
+from ...users.test import create_test_user
+from ..models import ThreadParticipant
 from .test_privatethreads import PrivateThreadsTestCase
-
-
-UserModel = get_user_model()
 
 
 class SyncUnreadPrivateThreadsTestCase(PrivateThreadsTestCase):
     def setUp(self):
         super().setUp()
 
-        self.other_user = UserModel.objects.create_user(
-            'BobBoberson', 'bob@boberson.com', 'pass123'
-        )
-
-        self.thread = testutils.post_thread(self.category, poster=self.user)
+        self.other_user = create_test_user("OtherUser", "user@example.com")
+        self.thread = test.post_thread(self.category, poster=self.user)
 
         ThreadParticipant.objects.set_owner(self.thread, self.other_user)
         ThreadParticipant.objects.add_participants(self.thread, [self.user])
@@ -27,7 +19,7 @@ class SyncUnreadPrivateThreadsTestCase(PrivateThreadsTestCase):
         self.user.sync_unread_private_threads = True
         self.user.save()
 
-        response = self.client.get('/')
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
         # user was resynced
@@ -37,7 +29,9 @@ class SyncUnreadPrivateThreadsTestCase(PrivateThreadsTestCase):
         self.assertEqual(self.user.unread_private_threads, 1)
 
     def test_middleware_counts_unread_thread(self):
-        """middleware counts thread with unread reply, post read flags user for recount"""
+        """
+        middleware counts thread with unread reply, post read flags user for recount
+        """
         self.user.sync_unread_private_threads = True
         self.user.save()
 
@@ -49,13 +43,13 @@ class SyncUnreadPrivateThreadsTestCase(PrivateThreadsTestCase):
         self.assertEqual(self.user.unread_private_threads, 0)
 
         # reply to thread
-        testutils.reply_thread(self.thread)
+        test.reply_thread(self.thread)
 
         self.user.sync_unread_private_threads = True
         self.user.save()
 
         # middleware did recount and accounted for new unread post
-        response = self.client.get('/')
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
         self.reload_user()

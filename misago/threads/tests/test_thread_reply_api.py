@@ -1,38 +1,23 @@
 from django.urls import reverse
 
-from misago.acl.testutils import override_acl
-from misago.categories.models import Category
-from misago.threads import testutils
-from misago.threads.models import Thread
-from misago.users.testutils import AuthenticatedUserTestCase
+from .. import test
+from ...acl.test import patch_user_acl
+from ...categories.models import Category
+from ...users.test import AuthenticatedUserTestCase
+from ..models import Thread
+from ..test import patch_category_acl
 
 
 class ReplyThreadTests(AuthenticatedUserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.category = Category.objects.get(slug='first-category')
-        self.thread = testutils.post_thread(category=self.category)
+        self.category = Category.objects.get(slug="first-category")
+        self.thread = test.post_thread(category=self.category)
 
         self.api_link = reverse(
-            'misago:api:thread-post-list', kwargs={
-                'thread_pk': self.thread.pk,
-            }
+            "misago:api:thread-post-list", kwargs={"thread_pk": self.thread.pk}
         )
-
-    def override_acl(self, extra_acl=None):
-        new_acl = self.user.acl_cache
-        new_acl['categories'][self.category.pk].update({
-            'can_see': 1,
-            'can_browse': 1,
-            'can_start_threads': 0,
-            'can_reply_threads': 1,
-        })
-
-        if extra_acl:
-            new_acl['categories'][self.category.pk].update(extra_acl)
-
-        override_acl(self.user, new_acl)
 
     def test_cant_reply_thread_as_guest(self):
         """user has to be authenticated to be able to post reply"""
@@ -43,120 +28,119 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
 
     def test_thread_visibility(self):
         """thread's visibility is validated"""
-        self.override_acl({'can_see': 0})
-        response = self.client.post(self.api_link)
-        self.assertEqual(response.status_code, 404)
+        with patch_category_acl({"can_see": 0}):
+            response = self.client.post(self.api_link)
+            self.assertEqual(response.status_code, 404)
 
-        self.override_acl({'can_browse': 0})
-        response = self.client.post(self.api_link)
-        self.assertEqual(response.status_code, 404)
+        with patch_category_acl({"can_browse": 0}):
+            response = self.client.post(self.api_link)
+            self.assertEqual(response.status_code, 404)
 
-        self.override_acl({'can_see_all_threads': 0})
-        response = self.client.post(self.api_link)
-        self.assertEqual(response.status_code, 404)
+        with patch_category_acl({"can_see_all_threads": 0}):
+            response = self.client.post(self.api_link)
+            self.assertEqual(response.status_code, 404)
 
+    @patch_category_acl({"can_reply_threads": False})
     def test_cant_reply_thread(self):
         """permission to reply thread is validated"""
-        self.override_acl({'can_reply_threads': 0})
-
         response = self.client.post(self.api_link)
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {
-            "detail": "You can't reply to threads in this category.",
-        })
+        self.assertEqual(
+            response.json(), {"detail": "You can't reply to threads in this category."}
+        )
 
-    def test_closed_category(self):
+    @patch_category_acl({"can_reply_threads": True, "can_close_threads": False})
+    def test_closed_category_no_permission(self):
         """permssion to reply in closed category is validated"""
-        self.override_acl({'can_close_threads': 0})
-
         self.category.is_closed = True
         self.category.save()
 
         response = self.client.post(self.api_link)
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {
-            "detail": "This category is closed. You can't reply to threads in it.",
-        })
+        self.assertEqual(
+            response.json(),
+            {"detail": "This category is closed. You can't reply to threads in it."},
+        )
 
-        # allow to post in closed category
-        self.override_acl({'can_close_threads': 1})
+    @patch_category_acl({"can_reply_threads": True, "can_close_threads": True})
+    def test_closed_category(self):
+        """permssion to reply in closed category is validated"""
+        self.category.is_closed = True
+        self.category.save()
 
         response = self.client.post(self.api_link)
         self.assertEqual(response.status_code, 400)
 
-    def test_closed_thread(self):
+    @patch_category_acl({"can_reply_threads": True, "can_close_threads": False})
+    def test_closed_thread_no_permission(self):
         """permssion to reply in closed thread is validated"""
-        self.override_acl({'can_close_threads': 0})
-
         self.thread.is_closed = True
         self.thread.save()
 
         response = self.client.post(self.api_link)
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {
-            "detail": "You can't reply to closed threads in this category.",
-        })
+        self.assertEqual(
+            response.json(),
+            {"detail": "You can't reply to closed threads in this category."},
+        )
 
-        # allow to post in closed thread
-        self.override_acl({'can_close_threads': 1})
+    @patch_category_acl({"can_reply_threads": True, "can_close_threads": True})
+    def test_closed_thread(self):
+        """permssion to reply in closed thread is validated"""
+        self.thread.is_closed = True
+        self.thread.save()
 
         response = self.client.post(self.api_link)
         self.assertEqual(response.status_code, 400)
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_empty_data(self):
         """no data sent handling has no showstoppers"""
-        self.override_acl()
-
         response = self.client.post(self.api_link, data={})
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {
-            "post": ["You have to enter a message."],
-        })
+        self.assertEqual(response.json(), {"post": ["You have to enter a message."]})
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_invalid_data(self):
         """api errors for invalid request data"""
-        self.override_acl()
-
         response = self.client.post(
-            self.api_link,
-            'false',
-            content_type="application/json",
+            self.api_link, "false", content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {
-            'non_field_errors': ['Invalid data. Expected a dictionary, but got bool.']
-        })
+        self.assertEqual(
+            response.json(),
+            {
+                "non_field_errors": [
+                    "Invalid data. Expected a dictionary, but got bool."
+                ]
+            },
+        )
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_post_is_validated(self):
         """post is validated"""
-        self.override_acl()
-
-        response = self.client.post(
-            self.api_link, data={
-                'post': "a",
-            }
-        )
+        response = self.client.post(self.api_link, data={"post": "a"})
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
-            response.json(), {
-                'post': ["Posted message should be at least 5 characters long (it has 1)."],
-            }
+            response.json(),
+            {
+                "post": [
+                    "Posted message should be at least 5 characters long (it has 1)."
+                ]
+            },
         )
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_can_reply_thread(self):
         """endpoint creates new reply"""
-        self.override_acl()
         response = self.client.post(
-            self.api_link, data={
-                'post': "This is test response!",
-            }
+            self.api_link, data={"post": "This is test response!"}
         )
         self.assertEqual(response.status_code, 200)
 
         thread = Thread.objects.get(pk=self.thread.pk)
 
-        self.override_acl()
         response = self.client.get(self.thread.get_absolute_url())
         self.assertContains(response, "<p>This is test response!</p>")
 
@@ -187,26 +171,22 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         self.assertEqual(category.last_poster_name, self.user.username)
         self.assertEqual(category.last_poster_slug, self.user.slug)
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_post_unicode(self):
         """unicode characters can be posted"""
-        self.override_acl()
-
         response = self.client.post(
-            self.api_link, data={
-                'post': "Chrzążczyżewoszyce, powiat Łękółody.",
-            }
+            self.api_link, data={"post": "Chrzążczyżewoszyce, powiat Łękółody."}
         )
         self.assertEqual(response.status_code, 200)
 
+    @patch_category_acl({"can_reply_threads": True})
     def test_category_moderation_queue(self):
         """reply thread in category that requires approval"""
         self.category.require_replies_approval = True
         self.category.save()
 
         response = self.client.post(
-            self.api_link, data={
-                'post': "Lorem ipsum dolor met!",
-            }
+            self.api_link, data={"post": "Lorem ipsum dolor met!"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -218,21 +198,19 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         post = self.user.post_set.all()[:1][0]
         self.assertTrue(post.is_unapproved)
 
-        category = Category.objects.get(slug='first-category')
+        category = Category.objects.get(slug="first-category")
         self.assertEqual(category.threads, self.category.threads)
         self.assertEqual(category.posts, self.category.posts)
 
+    @patch_category_acl({"can_reply_threads": True})
+    @patch_user_acl({"can_approve_content": True})
     def test_category_moderation_queue_bypass(self):
         """bypass moderation queue due to user's acl"""
-        override_acl(self.user, {'can_approve_content': 1})
-
         self.category.require_replies_approval = True
         self.category.save()
 
         response = self.client.post(
-            self.api_link, data={
-                'post': "Lorem ipsum dolor met!",
-            }
+            self.api_link, data={"post": "Lorem ipsum dolor met!"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -244,18 +222,15 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         post = self.user.post_set.all()[:1][0]
         self.assertFalse(post.is_unapproved)
 
-        category = Category.objects.get(slug='first-category')
+        category = Category.objects.get(slug="first-category")
         self.assertEqual(category.threads, self.category.threads)
         self.assertEqual(category.posts, self.category.posts + 1)
 
+    @patch_category_acl({"can_reply_threads": True, "require_replies_approval": True})
     def test_user_moderation_queue(self):
         """reply thread by user that requires approval"""
-        self.override_acl({'require_replies_approval': 1})
-
         response = self.client.post(
-            self.api_link, data={
-                'post': "Lorem ipsum dolor met!",
-            }
+            self.api_link, data={"post": "Lorem ipsum dolor met!"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -267,20 +242,16 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         post = self.user.post_set.all()[:1][0]
         self.assertTrue(post.is_unapproved)
 
-        category = Category.objects.get(slug='first-category')
+        category = Category.objects.get(slug="first-category")
         self.assertEqual(category.threads, self.category.threads)
         self.assertEqual(category.posts, self.category.posts)
 
+    @patch_category_acl({"can_reply_threads": True, "require_replies_approval": True})
+    @patch_user_acl({"can_approve_content": True})
     def test_user_moderation_queue_bypass(self):
         """bypass moderation queue due to user's acl"""
-        override_acl(self.user, {'can_approve_content': 1})
-
-        self.override_acl({'require_replies_approval': 1})
-
         response = self.client.post(
-            self.api_link, data={
-                'post': "Lorem ipsum dolor met!",
-            }
+            self.api_link, data={"post": "Lorem ipsum dolor met!"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -292,25 +263,25 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         post = self.user.post_set.all()[:1][0]
         self.assertFalse(post.is_unapproved)
 
-        category = Category.objects.get(slug='first-category')
+        category = Category.objects.get(slug="first-category")
         self.assertEqual(category.threads, self.category.threads)
         self.assertEqual(category.posts, self.category.posts + 1)
 
+    @patch_category_acl(
+        {
+            "can_reply_threads": True,
+            "require_threads_approval": True,
+            "require_edits_approval": True,
+        }
+    )
     def test_omit_other_moderation_queues(self):
         """other queues are omitted"""
         self.category.require_threads_approval = True
         self.category.require_edits_approval = True
         self.category.save()
 
-        self.override_acl({
-            'require_threads_approval': 1,
-            'require_edits_approval': 1,
-        })
-
         response = self.client.post(
-            self.api_link, data={
-                'post': "Lorem ipsum dolor met!",
-            }
+            self.api_link, data={"post": "Lorem ipsum dolor met!"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -322,6 +293,6 @@ class ReplyThreadTests(AuthenticatedUserTestCase):
         post = self.user.post_set.all()[:1][0]
         self.assertFalse(post.is_unapproved)
 
-        category = Category.objects.get(slug='first-category')
+        category = Category.objects.get(slug="first-category")
         self.assertEqual(category.threads, self.category.threads)
         self.assertEqual(category.posts, self.category.posts + 1)

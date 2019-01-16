@@ -1,25 +1,15 @@
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from django.utils.translation import gettext as _
+from ...core.utils import format_plaintext_for_html
+from ..models import Ban
 
-from misago.core.utils import format_plaintext_for_html
-from misago.users.models import Ban
-
-
-__all__ = [
-    'BanMessageSerializer',
-    'BanDetailsSerializer',
-]
+__all__ = ["BanMessageSerializer", "BanDetailsSerializer"]
 
 
 def serialize_message(message):
     if message:
-        return {
-            'plain': message,
-            'html': format_plaintext_for_html(message),
-        }
-    else:
-        return None
+        return {"plain": message, "html": format_plaintext_for_html(message)}
 
 
 class BanMessageSerializer(serializers.ModelSerializer):
@@ -27,10 +17,7 @@ class BanMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ban
-        fields = [
-            'message',
-            'expires_on',
-        ]
+        fields = ["message", "expires_on"]
 
     def get_message(self, obj):
         if obj.user_message:
@@ -49,11 +36,7 @@ class BanDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ban
-        fields = [
-            'user_message',
-            'staff_message',
-            'expires_on',
-        ]
+        fields = ["user_message", "staff_message", "expires_on"]
 
     def get_user_message(self, obj):
         return serialize_message(obj.user_message)

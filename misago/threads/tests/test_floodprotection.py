@@ -1,51 +1,46 @@
 from django.urls import reverse
 
-from misago.acl.testutils import override_acl
-from misago.categories.models import Category
-from misago.threads import testutils
-from misago.users.testutils import AuthenticatedUserTestCase
+from .. import test
+from ...acl.test import patch_user_acl
+from ...categories.models import Category
+from ...users.test import AuthenticatedUserTestCase
 
 
-class PostMentionsTests(AuthenticatedUserTestCase):
+class FloodProtectionTests(AuthenticatedUserTestCase):
     def setUp(self):
         super().setUp()
 
-        self.category = Category.objects.get(slug='first-category')
-        self.thread = testutils.post_thread(category=self.category)
-        self.override_acl()
+        self.category = Category.objects.get(slug="first-category")
+        self.thread = test.post_thread(category=self.category)
 
         self.post_link = reverse(
-            'misago:api:thread-post-list', kwargs={
-                'thread_pk': self.thread.pk,
-            }
+            "misago:api:thread-post-list", kwargs={"thread_pk": self.thread.pk}
         )
-
-    def override_acl(self):
-        new_acl = self.user.acl_cache
-        new_acl['categories'][self.category.pk].update({
-            'can_see': 1,
-            'can_browse': 1,
-            'can_start_threads': 1,
-            'can_reply_threads': 1,
-        })
-
-        override_acl(self.user, new_acl)
 
     def test_flood_has_no_showstoppers(self):
         """endpoint handles posting interruption"""
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response!",
-            }
+            self.post_link, data={"post": "This is test response!"}
         )
         self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
-            self.post_link, data={
-                'post': "This is test response!",
-            }
+            self.post_link, data={"post": "This is test response!"}
         )
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {
-            "detail": "You can't post message so quickly after previous one."
-        })
+        self.assertEqual(
+            response.json(),
+            {"detail": "You can't post message so quickly after previous one."},
+        )
+
+    @patch_user_acl({"can_omit_flood_protection": True})
+    def test_user_with_permission_omits_flood_protection(self):
+        response = self.client.post(
+            self.post_link, data={"post": "This is test response!"}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            self.post_link, data={"post": "This is test response!"}
+        )
+        self.assertEqual(response.status_code, 200)

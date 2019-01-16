@@ -2,8 +2,7 @@ from django.urls import reverse
 from social_core.backends.utils import load_backends
 from unidecode import unidecode
 
-from misago.conf import settings
-
+from ...conf import settings
 from .backendsnames import BACKENDS_NAMES
 
 
@@ -12,12 +11,14 @@ def get_enabled_social_auth_sites_list():
     providers_list = []
     for backend_id in social_auth_backends:
         backend_name = get_social_auth_backend_name(backend_id)
-            
-        providers_list.append({
-            'id': backend_id,
-            'name': backend_name,
-            'url': reverse('social:begin', kwargs={'backend': backend_id}),
-        })
+
+        providers_list.append(
+            {
+                "id": backend_id,
+                "name": backend_name,
+                "url": reverse("social:begin", kwargs={"backend": backend_id}),
+            }
+        )
     return providers_list
 
 
@@ -30,4 +31,4 @@ def get_social_auth_backend_name(backend_id):
 
 
 def perpare_username(username):
-    return ''.join(filter(str.isalnum, unidecode(username)))
+    return "".join(filter(str.isalnum, unidecode(username)))
