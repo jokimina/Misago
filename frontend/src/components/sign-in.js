@@ -45,16 +45,16 @@ export default class extends Form {
   handleSuccess() {
     let form = $("#hidden-login-form")
 
-    form.append('<input type="text" name="username" />')
-    form.append('<input type="password" name="password" />')
+    form.append("<input type=\"text\" name=\"username\" />")
+    form.append("<input type=\"password\" name=\"password\" />")
 
     // fill out form with user credentials and submit it, this will tell
     // Misago to redirect user back to right page, and will trigger browser's
     // key ring feature
-    form.find('input[type="hidden"]').val(ajax.getCsrfToken())
-    form.find('input[name="redirect_to"]').val(window.location.pathname)
-    form.find('input[name="username"]').val(this.state.username)
-    form.find('input[name="password"]').val(this.state.password)
+    form.find("input[type=\"hidden\"]").val(ajax.getCsrfToken())
+    form.find("input[name=\"redirect_to\"]").val(window.location.pathname)
+    form.find("input[name=\"username\"]").val(this.state.username)
+    form.find("input[name=\"password\"]").val(this.state.password)
     form.submit()
 
     // keep form loading

@@ -48,12 +48,12 @@ export class OneBox {
     }
 
     const player = $(
-      '<iframe class="embed-responsive-item" src="' +
+      "<iframe class=\"embed-responsive-item\" src=\"" +
         url +
-        '" allowfullscreen></iframe>'
+        "\" allowfullscreen></iframe>"
     )
     $(element).replaceWith(player)
-    player.wrap('<div class="embed-responsive embed-responsive-16by9"></div>')
+    player.wrap("<div class=\"embed-responsive embed-responsive-16by9\"></div>")
   }
 }
 

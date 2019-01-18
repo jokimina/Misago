@@ -1,18 +1,3 @@
-import React from 'react'; //jshint ignore:line
-import Editor from 'misago/components/editor'; //jshint ignore:line
-import Form from 'misago/components/form';
-import Container from './utils/container'; //jshint ignore:line
-import Loader from './utils/loader'; //jshint ignore:line
-import Message from './utils/message'; //jshint ignore:line
-import * as attachments from './utils/attachments'; //jshint ignore:line
-import { getPostValidators } from './utils/validators';
-import ajax from 'misago/services/ajax';
-import posting from 'misago/services/posting'; //jshint ignore:line
-import snackbar from 'misago/services/snackbar';
-import { ModalDialog } from './start'; // jshint ignore:line
-import modal from 'misago/services/modal'; // jshint ignore:line
-
-const QRCode = require('qrcode.react'); // jshint ignore:line
 import React from "react"
 import Editor from "misago/components/editor"
 import Form from "misago/components/form"
@@ -24,6 +9,10 @@ import { getPostValidators } from "./utils/validators"
 import ajax from "misago/services/ajax"
 import posting from "misago/services/posting"
 import snackbar from "misago/services/snackbar"
+import { ModalDialog } from "./start"
+import modal from "misago/services/modal"
+
+const QRCode = require("qrcode.react") 
 
 export default class extends Form {
   constructor(props) {
@@ -66,7 +55,7 @@ export default class extends Form {
       isReady: true,
 
       post: data.post
-        ? '[quote="@' + data.poster + '"]\n' + data.post + "\n[/quote]"
+        ? "[quote=\"@" + data.poster + "\"]\n" + data.post + "\n[/quote]"
         : ""
     })
   }
@@ -79,7 +68,7 @@ export default class extends Form {
 
   appendData = data => {
     const newPost = data.post
-      ? '[quote="@' + data.poster + '"]\n' + data.post + "\n[/quote]\n\n"
+      ? "[quote=\"@" + data.poster + "\"]\n" + data.post + "\n[/quote]\n\n"
       : ""
 
     this.setState((prevState, props) => {
@@ -105,10 +94,10 @@ export default class extends Form {
   }
 
   queryBindStatus = () => {
-    ajax.get(misago.get('PAY_WECHAT_BIND_STATUS_API')).then(
+    ajax.get(misago.get("PAY_WECHAT_BIND_STATUS_API")).then(
       (data) => {
-        if (data.status === 'SUCCESS'){
-            modal.hide();
+        if (data.status === "SUCCESS"){
+            modal.hide()
             this.handleSubmit()
         }
       }
@@ -116,7 +105,7 @@ export default class extends Form {
   }
 
   onClick = () => {
-    ajax.get(misago.get('PAY_WECHAT_BIND_QRCODE_API')).then(
+    ajax.get(misago.get("PAY_WECHAT_BIND_QRCODE_API")).then(
         (data) => {
           if (data && data.code_url) {
             let queryBindStatusIntervalId = setInterval(this.queryBindStatus, 1500)
@@ -138,7 +127,7 @@ export default class extends Form {
           }
         },
         (rejection) => {
-            if (rejection.statusText === 'Gone'){
+            if (rejection.statusText === "Gone"){
               this.handleSubmit()
             } else {
               snackbar.apiError(rejection)
@@ -148,7 +137,7 @@ export default class extends Form {
   };
 
   onPostChange = (event) => {
-    this.changeValue('post', event.target.value);
+    this.changeValue("post", event.target.value)
   };
   onPostChange = event => {
     this.changeValue("post", event.target.value)

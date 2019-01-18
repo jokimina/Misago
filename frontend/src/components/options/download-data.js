@@ -67,7 +67,7 @@ export default class DownloadData extends React.Component {
           <div className="panel-body">
             <p>
               {gettext(
-                'To download your data from the site, click the "Request data download" button. Depending on amount of data to be archived and number of users wanting to download their data at same time it may take up to few days for your download to be prepared. An e-mail with notification will be sent to you when your data is ready to be downloaded.'
+                "To download your data from the site, click the \"Request data download\" button. Depending on amount of data to be archived and number of users wanting to download their data at same time it may take up to few days for your download to be prepared. An e-mail with notification will be sent to you when your data is ready to be downloaded."
               )}
             </p>
 

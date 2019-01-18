@@ -2,10 +2,10 @@ import React from "react"
 import escapeHtml from "misago/utils/escape-html"
 import Controls from "./controls"
 
-const DATE_ABBR = '<abbr title="%(absolute)s">%(relative)s</abbr>'
-const DATE_URL = '<a href="%(url)s" title="%(absolute)s">%(relative)s</a>'
-const USER_SPAN = '<span class="item-title">%(user)s</span>'
-const USER_URL = '<a href="%(url)s" class="item-title">%(user)s</a>'
+const DATE_ABBR = "<abbr title=\"%(absolute)s\">%(relative)s</abbr>"
+const DATE_URL = "<a href=\"%(url)s\" title=\"%(absolute)s\">%(relative)s</a>"
+const USER_SPAN = "<span class=\"item-title\">%(user)s</span>"
+const USER_URL = "<a href=\"%(url)s\" class=\"item-title\">%(user)s</a>"
 
 export default function(props) {
   return (

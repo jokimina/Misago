@@ -3,9 +3,9 @@ import misago from "misago"
 import escapeHtml from "misago/utils/escape-html"
 import formatFilesize from "misago/utils/file-size"
 
-const DATE_ABBR = '<abbr title="%(absolute)s">%(relative)s</abbr>'
-const USER_SPAN = '<span class="item-title">%(user)s</span>'
-const USER_URL = '<a href="%(url)s" class="item-title">%(user)s</a>'
+const DATE_ABBR = "<abbr title=\"%(absolute)s\">%(relative)s</abbr>"
+const USER_SPAN = "<span class=\"item-title\">%(user)s</span>"
+const USER_URL = "<a href=\"%(url)s\" class=\"item-title\">%(user)s</a>"
 
 export default class extends React.Component {
   onInsert = () => {

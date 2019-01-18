@@ -2,9 +2,9 @@ import React from "react"
 import Button from "misago/components/button"
 import escapeHtml from "misago/utils/escape-html"
 
-const DATE_ABBR = '<abbr title="%(absolute)s">%(relative)s</abbr>'
-const USER_SPAN = '<span class="item-title">%(user)s</span>'
-const USER_URL = '<a href="%(url)s" class="item-title">%(user)s</a>'
+const DATE_ABBR = "<abbr title=\"%(absolute)s\">%(relative)s</abbr>"
+const USER_SPAN = "<span class=\"item-title\">%(user)s</span>"
+const USER_URL = "<a href=\"%(url)s\" class=\"item-title\">%(user)s</a>"
 
 export default class extends React.Component {
   goLast = () => {

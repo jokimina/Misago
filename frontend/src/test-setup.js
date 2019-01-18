@@ -19,15 +19,15 @@ $.mockjaxSettings.responseTime = 50
 require("babel-polyfill")
 
 // Mock base href element
-$("head").append('<base href="/test-runner/">')
+$("head").append("<base href=\"/test-runner/\">")
 
 // Bootstrap's modal (we'll need it anyway for tests);
 $("body").append(
-  '<div class="modal fade" id="modal-mount" tabindex="-1" role="dialog" aria-labelledby="misago-modal-label"></div>'
+  "<div class=\"modal fade\" id=\"modal-mount\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"misago-modal-label\"></div>"
 )
-$("body").append('<div id="dropdown-mount"></div>')
-$("body").append('<div id="page-mount"></div>')
-$("body").append('<div id="test-mount"></div>')
+$("body").append("<div id=\"dropdown-mount\"></div>")
+$("body").append("<div id=\"page-mount\"></div>")
+$("body").append("<div id=\"test-mount\"></div>")
 
 // inlined gettext functions form Django
 ;(function(globals) {

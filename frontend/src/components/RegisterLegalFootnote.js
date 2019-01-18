@@ -2,7 +2,7 @@ import React from "react"
 import misago from "misago"
 import escapeHtml from "misago/utils/escape-html"
 
-const AGREEMENT_URL = '<a href="%(url)s" target="_blank">%(agreement)s</a>'
+const AGREEMENT_URL = "<a href=\"%(url)s\" target=\"_blank\">%(agreement)s</a>"
 
 const RegisterLegalFootnote = props => {
   const {

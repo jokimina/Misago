@@ -52,7 +52,7 @@ export function mockUser(overrides) {
 
       css_class: "team",
       description:
-        '<p>Lorem ipsum dolor met sit amet elit, si vis pacem para bellum.</p>\n<p>To help see <a href="http://wololo.com/something.php?page=2131">http://wololo.com/something.php?page=2131</a></p>',
+        "<p>Lorem ipsum dolor met sit amet elit, si vis pacem para bellum.</p>\n<p>To help see <a href=\"http://wololo.com/something.php?page=2131\">http://wololo.com/something.php?page=2131</a></p>",
       is_tab: true,
       name: "Forum team",
       slug: "forum-team",
@@ -164,7 +164,7 @@ export function simulateClick(selector) {
   if ($(selector).length) {
     ReactTestUtils.Simulate.click($(selector).get(0))
   } else {
-    throw 'selector "' + selector + '" did not match anything'
+    throw "selector \"" + selector + "\" did not match anything"
   }
 }
 
@@ -172,7 +172,7 @@ export function simulateSubmit(selector) {
   if ($(selector).length) {
     ReactTestUtils.Simulate.submit($(selector).get(0))
   } else {
-    throw 'selector "' + selector + '" did not match anything'
+    throw "selector \"" + selector + "\" did not match anything"
   }
 }
 
@@ -181,7 +181,7 @@ export function simulateChange(selector, value) {
     $(selector).val(value)
     ReactTestUtils.Simulate.change($(selector).get(0))
   } else {
-    throw 'selector "' + selector + '" did not match anything'
+    throw "selector \"" + selector + "\" did not match anything"
   }
 }
 

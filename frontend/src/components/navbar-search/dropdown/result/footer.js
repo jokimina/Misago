@@ -3,8 +3,8 @@ import React from "react"
 export default function({ provider, query }) {
   const url = provider.url + "?q=" + encodeURI(query)
   const label = ngettext(
-    'See full "%(provider)s" results page with %(count)s result.',
-    'See full "%(provider)s" results page with %(count)s results.',
+    "See full \"%(provider)s\" results page with %(count)s result.",
+    "See full \"%(provider)s\" results page with %(count)s results.",
     provider.count
   )
 

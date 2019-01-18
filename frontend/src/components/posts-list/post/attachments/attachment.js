@@ -3,9 +3,9 @@ import misago from "misago"
 import escapeHtml from "misago/utils/escape-html"
 import formatFilesize from "misago/utils/file-size"
 
-const DATE_ABBR = '<abbr title="%(absolute)s">%(relative)s</abbr>'
-const USER_SPAN = '<span class="item-title">%(user)s</span>'
-const USER_URL = '<a href="%(url)s" class="item-title">%(user)s</a>'
+const DATE_ABBR = "<abbr title=\"%(absolute)s\">%(relative)s</abbr>"
+const USER_SPAN = "<span class=\"item-title\">%(user)s</span>"
+const USER_URL = "<a href=\"%(url)s\" class=\"item-title\">%(user)s</a>"
 
 export default function(props) {
   return (
@@ -54,7 +54,7 @@ export function AttachmentThumbnail(props) {
     <a
       className="post-thumbnail"
       href={props.attachment.url.index}
-      style={{ backgroundImage: 'url("' + escapeHtml(url) + '")' }}
+      style={{ backgroundImage: "url(\"" + escapeHtml(url) + "\")" }}
     />
   )
 }

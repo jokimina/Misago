@@ -1,10 +1,10 @@
 import React from "react"
 import escapeHtml from "misago/utils/escape-html"
 
-const LAST_POSTER_URL = '<a href="%(url)s" class="poster-title">%(user)s</a>'
-const LAST_POSTER_SPAN = '<span class="poster-title">%(user)s</span>'
+const LAST_POSTER_URL = "<a href=\"%(url)s\" class=\"poster-title\">%(user)s</a>"
+const LAST_POSTER_SPAN = "<span class=\"poster-title\">%(user)s</span>"
 const LAST_REPLY =
-  '<abbr class="last-title" title="%(absolute)s">%(relative)s</abbr>'
+  "<abbr class=\"last-title\" title=\"%(absolute)s\">%(relative)s</abbr>"
 
 export function Weight(props) {
   if (props.thread.weight == 2) {

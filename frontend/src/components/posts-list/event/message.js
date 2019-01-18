@@ -20,8 +20,8 @@ const MESSAGE = {
   participant_left: gettext("Participant has left thread.")
 }
 
-const ITEM_LINK = '<a href="%(url)s" class="item-title">%(name)s</a>'
-const ITEM_SPAN = '<span class="item-title">%(name)s</span>'
+const ITEM_LINK = "<a href=\"%(url)s\" class=\"item-title\">%(name)s</a>"
+const ITEM_SPAN = "<span class=\"item-title\">%(name)s</span>"
 
 export default function(props) {
   if (MESSAGE[props.post.event_type]) {

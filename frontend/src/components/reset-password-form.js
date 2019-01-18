@@ -131,7 +131,7 @@ export default class extends React.Component {
 
     // nuke "redirect_to" field so we don't end
     // coming back to error page after sign in
-    $('#hidden-login-form input[name="redirect_to"]').remove()
+    $("#hidden-login-form input[name=\"redirect_to\"]").remove()
 
     ReactDOM.render(
       <PasswordChangedPage user={apiResponse} />,

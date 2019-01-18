@@ -3,10 +3,10 @@ import Waypoint from "../waypoint"
 import MisagoMarkup from "misago/components/misago-markup"
 import escapeHtml from "misago/utils/escape-html"
 
-const HIDDEN_BY_URL = '<a href="%(url)s" class="item-title">%(user)s</a>'
-const HIDDEN_BY_SPAN = '<span class="item-title">%(user)s</span>'
+const HIDDEN_BY_URL = "<a href=\"%(url)s\" class=\"item-title\">%(user)s</a>"
+const HIDDEN_BY_SPAN = "<span class=\"item-title\">%(user)s</span>"
 const HIDDEN_ON =
-  '<abbr class="last-title" title="%(absolute)s">%(relative)s</abbr>'
+  "<abbr class=\"last-title\" title=\"%(absolute)s\">%(relative)s</abbr>"
 
 export default function(props) {
   if (props.post.is_hidden && !props.post.acl.can_see_hidden) {

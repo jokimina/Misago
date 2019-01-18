@@ -29,7 +29,7 @@ export default class extends React.Component {
   componentDidMount() {
     $("#editor-textarea").atwho({
       at: "@",
-      displayTpl: '<li><img src="${avatar}" alt="">${username}</li>',
+      displayTpl: "<li><img src=\"${avatar}\" alt=\"\">${username}</li>",
       insertTpl: "@${username}",
       searchKey: "username",
       callbacks: {
